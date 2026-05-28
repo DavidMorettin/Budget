@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budget Pulse - Personal Finance Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#080c14;color:#b8c0cc;font-family:'Outfit',sans-serif;min-height:100vh}
+.m{font-family:'JetBrains Mono',monospace}
+
+/* Header */
+.hd{background:linear-gradient(135deg,#0c1220 0%,#121a2e 100%);border-bottom:1px solid #1a2236;padding:18px 24px}
+.hi{max-width:1260px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.lg{font-size:24px;font-weight:700;color:#eef1f6;letter-spacing:-0.5px}
+.lg em{color:#38bdf8;font-style:normal}
+.sb{font-size:11px;color:#4a5568;margin-top:3px}
+.ha{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Buttons */
+.b{padding:8px 16px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;border:none;transition:all .2s;font-family:inherit}
+.bp{background:#38bdf8;color:#080c14}.bp:hover{background:#0ea5e9}
+.bo{background:transparent;border:1px solid #1a2236;color:#8896ab}.bo:hover{border-color:#38bdf8;color:#b8c0cc}
+.bd{background:transparent;border:1px solid #ef444433;color:#ef4444}.bd:hover{background:#ef444411}
+.bi{background:linear-gradient(135deg,#0ea5e9,#8b5cf6);color:#fff;padding:10px 20px}
+
+/* Layout */
+.cn{max-width:1260px;margin:0 auto;padding:16px 24px 60px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:768px){.g2{grid-template-columns:1fr}}
+
+/* Cards */
+.c{background:#0f1524;border:1px solid #1a2236;border-radius:10px;padding:16px}
+.ct{font-size:13px;font-weight:600;color:#eef1f6;margin-bottom:12px}
+
+/* KPI */
+.kl{font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:1.2px;font-weight:600;margin-bottom:3px}
+.kv{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.ks{font-size:10px;color:#3d4a5c;margin-top:2px}
+
+/* Tabs */
+.ts{display:flex;gap:3px;margin-bottom:16px}
+.t{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:#4a5568;font-family:inherit;transition:all .15s}
+.t.on{background:#38bdf822;color:#38bdf8}
+.t:hover:not(.on){color:#8896ab}
+
+/* Filters */
+.fl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.fl select,.fl input{padding:6px 12px;border-radius:6px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:12px;font-family:inherit;cursor:pointer}
+
+/* Table */
+.tw{overflow-x:auto;max-height:600px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{position:sticky;top:0;background:#0f1524;z-index:1}
+th{text-align:left;padding:9px 12px;color:#4a5568;font-weight:500;border-bottom:1px solid #1a2236;font-size:11px}
+th.r{text-align:right}
+td{padding:7px 12px;border-bottom:1px solid #1a223611}
+td.r{text-align:right}
+tr:hover td{background:#ffffff03}
+
+/* Tags */
+.tg{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500;display:inline-block;cursor:pointer}
+.ts2{font-size:9px;padding:2px 6px;border-radius:3px;font-weight:500}
+
+/* Bar chart rows */
+.br{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.bl{width:140px;font-size:11px;color:#8896ab;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt{flex:1;height:18px;background:#151d30;border-radius:4px;overflow:hidden}
+.bf{height:100%;border-radius:4px;transition:width .5s}
+.ba{width:85px;font-size:11px;font-family:'JetBrains Mono',monospace;color:#eef1f6;text-align:right;flex-shrink:0}
+.bp2{width:42px;font-size:10px;color:#4a5568;text-align:right;flex-shrink:0}
+
+/* Monthly chart */
+.mc{display:flex;align-items:flex-end;gap:6px;height:175px;padding-top:10px}
+.mcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end}
+.mb{width:100%;border-radius:3px 3px 0 0;min-height:1px;transition:height .5s}
+.ml2{font-size:9px;color:#4a5568;margin-top:4px;white-space:nowrap}
+
+/* Toast */
+.toast{background:#0c1f16;border:1px solid #22c55e33;border-radius:10px;padding:14px;margin:12px auto;max-width:1260px}
+.toastt{font-weight:600;color:#4ade80;font-size:13px;margin-bottom:6px}
+
+/* Empty */
+.empty{text-align:center;padding:80px 24px}
+.empty h2{color:#eef1f6;font-weight:600;font-size:20px}
+.empty p{color:#4a5568;font-size:14px;max-width:440px;margin:12px auto 0}
+
+/* Insight box */
+.ib{background:#0f1524;border:1px solid #1a2236;border-radius:10px;padding:18px;font-size:13px;line-height:1.7;color:#8896ab;white-space:pre-wrap}
+.ib strong{color:#38bdf8}
+
+.cs{padding:2px 6px;border-radius:4px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:11px;font-family:inherit}
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div class="hd"><div class="hi">
+<div><div class="lg"><em>&#8383;</em>udget Pulse</div><div class="sb" id="sub">Loading...</div></div>
+<div class="ha">
+<label class="b bp" id="ubtn">Upload Statements<input type="file" id="fi" multiple accept=".csv,.xls,.xlsx,.pdf"></label>
+<button class="b bo" onclick="exportCSV()">Export CSV</button>
+<button class="b bd" onclick="resetAll()">Reset</button>
+</div>
+</div></div>
+<div id="toast" style="padding:0 24px"></div>
+<div class="cn" id="app"></div>
+<script>
+var SEED=[];
+var HOLDINGS={"fx_rate": 1.38, "as_of": "Not yet updated", "accounts": []};
+
+// ─── CATEGORY RULES ───
+var CRULES=[
+// ─── Add your custom rules here ───
+// [/MERCHANT NAME/i, "Category"],
+
+// ─── Built-in rules (Canadian banks/merchants) ───
+[/LOBLAWS|FARM BOY|FOOD BASICS|METRO |FRESHCO|NOFRILLS|SOBEYS|GROCERY|T&T|LONGOS|COSTCO|WAL-MART|WALMART/i,"Groceries"],
+[/UBER EATS|SKIP ?THE ?DISH|DOORDASH|GRUBHUB/i,"Food Delivery"],
+[/UBER TRIP|LYFT|TAXI/i,"Rideshare"],
+[/PRESTO|GO TRANSIT|TTC |UP EXPRESS|VIARAIL|METROLINX/i,"Transit"],
+[/SHOPPERS|REXALL|PHARMACY|DRUG MART/i,"Health & Pharmacy"],
+[/SHELL |PETRO-CANADA|PIONEER |ESSO |ULTRAMAR|CANADIAN TIRE GAS/i,"Gas & Fuel"],
+[/407 ETR|MTO TSD/i,"Auto & Tolls"],
+[/AMAZON|AMZN/i,"Amazon"],
+[/BELL MOBILITY|ROGERS|FIDO|TELUS|KOODO/i,"Telecom"],
+[/NETFLIX|SPOTIFY|APPLE\.COM|DISNEY|OPENAI|CHATGPT/i,"Subscriptions"],
+[/GYM|FITNESS|CROSSFIT|GOODLIFE|FIT4LESS/i,"Fitness"],
+[/SPA|THERMEA/i,"Wellness & Spa"],
+[/RESTAURANT|PIZZA|SUSHI|BAR |PUB |CAFE|TAVERN|MCDONALD/i,"Dining & Entertainment"],
+[/STARBUCKS|TIM HORTON|SECOND CUP/i,"Coffee & Cafes"],
+[/LCBO|WINE RACK|BEER STORE/i,"Alcohol & Liquor"],
+[/AIRCANADA|WESTJET|PORTER|EXPEDIA|BOOKING|AIRBNB|HOTEL|MARRIOTT|HILTON/i,"Travel"],
+[/PETRO|PET VALU|VETERINAR/i,"Pets"],
+[/INTUIT|TURBOTAX/i,"Tax & Filing"],
+[/INSUR/i,"Insurance"],
+[/WS INVESTMENTS|WEALTHSIMPLE|TD DIRECT|TD WATERHOUSE/i,"Investments"],
+[/INTERAC ETRNSFR SENT|INTERAC e-Transfer Sent/i,"E-Transfers Sent"],
+[/PAYROLL|SALARY|DIR DEP|DIRECT DEPOSIT/i,"Employment Income"]
+];
+var PPAT=[/PAYMENT RECEIVED/i,/TRSF FROM\/DE ACCT/i,/\[CW\]AMEX CARDS/i,/\[CW\] TF 000\d+/i,/Online Bill Payment, AMEX CARDS/i,/Online Transfer, TF 000/i,/Online Bill Payment, TD WATERHSE/i];
+var CC={"Internet":"#0ea5e9","Amazon":"#ff9900","Utilities":"#06b6d4","Home Insurance":"#8b5cf6","Car Insurance":"#d946ef","Groceries":"#2d9d5a","Food Delivery":"#e67e22","Rideshare":"#e67e22","Transit":"#3498db","Health & Pharmacy":"#e74c3c","Gas & Fuel":"#8e44ad","Auto & Tolls":"#d35400","Shopping":"#3498db","Telecom":"#1abc9c","Subscriptions":"#9b59b6","Fitness":"#e91e63","Wellness & Spa":"#00bcd4","Dining & Entertainment":"#f39c12","Coffee & Cafes":"#a0522d","Alcohol & Liquor":"#c0392b","Travel":"#ff5722","Grooming":"#607d8b","Hair Care":"#8e44ad","Dry Cleaning":"#95a5a6","Pets":"#795548","Tax & Filing":"#009688","Donations":"#27ae60","Professional Fees":"#607d8b","Insurance":"#795548","Investments":"#4caf50","E-Transfers Sent":"#ff9800","Employment Income":"#2ecc71","Transfers Received":"#27ae60","Government / Tax":"#009688","Entertainment":"#ff6b6b","Rent / Housing":"#c0392b","Misc Purchases":"#95a5a6","ATM & Fees":"#bdc3c7","Cycling":"#2196f3","Uncategorized":"#7f8c8d"};
+var ALLC=Object.keys(CC);
+var MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// ─── HELPERS ───
+function cat(d){
+  var cr=loadRules();
+  for(var i=0;i<cr.length;i++){try{if(new RegExp(cr[i].pattern,"i").test(d))return cr[i].category}catch(e){}}
+  for(var j=0;j<CRULES.length;j++){if(CRULES[j][0].test(d))return CRULES[j][1]}
+  return"Uncategorized";
+}
+function isPay(d){return PPAT.some(function(p){return p.test(d)})}
+function tk(t){return t.date+"|"+t.description.trim().slice(0,40)+"|"+t.amount.toFixed(2)+"|"+t.source}
+function fm(n){return"$"+n.toLocaleString("en-CA",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function mk(d){return d.slice(0,7)}
+function fmk(k){var p=k.split("-");return MN[parseInt(p[1])-1]+" "+p[0]}
+function loadRules(){try{var s=localStorage.getItem("bp7-rules");return s?JSON.parse(s):[]}catch(e){return[]}}
+function saveRules(r){try{localStorage.setItem("bp7-rules",JSON.stringify(r))}catch(e){}}
+function addRule(p,c){var r=loadRules();if(!r.some(function(x){return x.pattern===p})){r.push({pattern:p,category:c});saveRules(r)}}
+function removeRule(i){var r=loadRules();r.splice(i,1);saveRules(r)}
+function getMerchantKey(d){
+  var s=d.trim().replace(/\s{2,}.*$/,"").replace(/\s+\d{3,}.*$/,"").replace(/\s+#\d+.*$/,"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  return s.trim();
+}
+function loadCustomCats(){
+  try{var s=localStorage.getItem("bp7-cats");if(s){var c=JSON.parse(s);for(var k in c){CC[k]=c[k];if(ALLC.indexOf(k)===-1)ALLC.push(k)}}}catch(e){}
+}
+function saveCustomCats(){try{var o={};for(var k in CC)o[k]=CC[k];localStorage.setItem("bp7-cats",JSON.stringify(o))}catch(e){}}
+
+// ─── STATE ───
+var T=[],view="overview",sMo="all",sSrc="all",sTyp="all",sCat="all",eIdx=null,sQ="",expCat=null;
+var BUDGETS={};
+function loadBudgets(){try{var s=localStorage.getItem("bp7-bud");if(s)BUDGETS=JSON.parse(s)}catch(e){}}
+function saveBudgets(){try{localStorage.setItem("bp7-bud",JSON.stringify(BUDGETS))}catch(e){}}
+function setBudget(cat,val){if(val&&!isNaN(val)&&val>0)BUDGETS[cat]=parseFloat(val);else delete BUDGETS[cat];saveBudgets();render()}
+
+var FCST={};
+function loadFcst(){try{var s=localStorage.getItem("bp7-fc");if(s)FCST=JSON.parse(s)}catch(e){}}
+function saveFcst(){try{localStorage.setItem("bp7-fc",JSON.stringify(FCST))}catch(e){}}
+
+var MBUD={};
+function loadMbud(){try{var s=localStorage.getItem("bp7-mbud");if(s)MBUD=JSON.parse(s)}catch(e){}}
+function saveMbud(){try{localStorage.setItem("bp7-mbud",JSON.stringify(MBUD))}catch(e){}}
+function setMbud(mKey,cat,val){
+  if(!MBUD[mKey])MBUD[mKey]={};
+  if(val&&!isNaN(val)&&parseFloat(val)>=0)MBUD[mKey][cat]=parseFloat(val);
+  else delete MBUD[mKey][cat];
+  if(Object.keys(MBUD[mKey]).length===0)delete MBUD[mKey];
+  saveMbud();render();
+}
+function setFcst(mKey,field,val){
+  if(!FCST[mKey])FCST[mKey]={};
+  if(val&&!isNaN(val)&&parseFloat(val)>=0)FCST[mKey][field]=parseFloat(val);
+  else delete FCST[mKey][field];
+  if(Object.keys(FCST[mKey]).length===0)delete FCST[mKey];
+  saveFcst();render();
+}
+
+function load(){
+  try{var s=localStorage.getItem("bp7-tx");if(s)T=JSON.parse(s);else{T=SEED;save()}}catch(e){T=SEED;save()}
+  // Auto-fix investments
+  var f=false;
+  var ip=/WS INVESTMENTS|WEALTHSIMPLE|TD DIRECT|TD WATERHOUSE|TD WATERHSE|TD INVESTMENT/i;
+  for(var i=0;i<T.length;i++){
+    if(T[i].category==="Investments"&&T[i].type!=="Investment"){T[i].type="Investment";f=true}
+    if(ip.test(T[i].description)&&T[i].type!=="Investment"){T[i].type="Investment";T[i].category="Investments";f=true}
+  }
+  if(f)save();
+}
+function save(){try{localStorage.setItem("bp7-tx",JSON.stringify(T))}catch(e){}}
+
+// ─── Holdings Storage ───
+function loadHoldings(){
+  try{var s=localStorage.getItem("bp7-hold");if(s)return JSON.parse(s)}catch(e){}
+  return HOLDINGS;
+}
+
+var livePrices={};
+var livePrevClose={};
+var liveFX=null;
+var priceLoading=false;
+
+function getFinnhubKey(){
+  return localStorage.getItem("bp7-fhkey")||"";
+}
+function setFinnhubKey(){
+  var k=prompt("Enter your free Finnhub API key (get one at finnhub.io/register):",getFinnhubKey());
+  if(k&&k.trim()){localStorage.setItem("bp7-fhkey",k.trim());
+    document.getElementById("toast").innerHTML='<div class="toast"><div class="toastt" style="color:#4ade80">API Key Saved</div><div style="font-size:12px;color:#8896ab">Click Refresh to fetch prices</div><button class="b bo" style="margin-top:8px;font-size:11px" onclick="document.getElementById(\'toast\').innerHTML=\'\'">OK</button></div>';
+  }
+}
+
+async function fetchLivePrices(){
+  if(priceLoading)return;
+  priceLoading=true;render();
+  document.getElementById("toast").innerHTML='<div class="toast"><div class="toastt">Fetching live prices...</div><div style="font-size:12px;color:#8896ab">Updating stock prices and FX rate via Finnhub</div></div>';
+  var H=loadHoldings();
+  var apiKey=getFinnhubKey();
+  if(!apiKey){
+    priceLoading=false;
+    var k=prompt("To fetch live stock prices, you need a free Finnhub API key.\n\n1. Go to finnhub.io/register (opens after this)\n2. Sign up (takes 30 seconds)\n3. Copy your API key from the dashboard\n4. Paste it below:\n\nAPI Key:");
+    if(k&&k.trim()){
+      localStorage.setItem("bp7-fhkey",k.trim());
+      apiKey=k.trim();
+    }else{
+      window.open("https://finnhub.io/register","_blank");
+      document.getElementById("toast").innerHTML='<div class="toast"><div class="toastt" style="color:#fbbf24">API Key Required</div><div style="font-size:12px;color:#8896ab">Sign up at <a href="https://finnhub.io/register" target="_blank" style="color:#38bdf8">finnhub.io/register</a>, copy your key, then click \u21bb Refresh again</div><button class="b bo" style="margin-top:8px;font-size:11px" onclick="document.getElementById(\'toast\').innerHTML=\'\'">OK</button></div>';
+      return;
+    }
+  }
+  var symMap={};
+  // Finnhub free tier only supports US exchanges. Skip CAD-only ETFs.
+  var cadOnly={"ZAG":1,"ZCB":1,"ZHY":1,"ZEA":1,"QCN":1,"QUU":1,"GRN":1,"ZUAG.F":1,"GSWO":1};
+  var totalMVusd=0,totalMVcadOnly=0;
+  H.accounts.forEach(function(a){a.holdings.forEach(function(p){
+    if(cadOnly[p.symbol]){totalMVcadOnly+=p.market*(a.currency==="USD"?(H.fx_rate||1.38):1)}
+    else if(!p.symbol.includes(".")){symMap[p.symbol]=p.symbol;totalMVusd+=p.market*(a.currency==="USD"?(H.fx_rate||1.38):1)}
+  })});
+  // Always fetch SPY for S&P 500 benchmark chart
+  symMap["SPY"]="SPY";
+  var fetched=0,failed=0,failedSyms=[];
+  var entries=Object.entries(symMap);
+  var total=entries.length;
+  for(var si=0;si<entries.length;si++){
+    var finnSym=entries[si][0],origSym=entries[si][1];
+    document.getElementById("toast").innerHTML='<div class="toast"><div class="toastt">Fetching prices... '+(si+1)+'/'+total+'</div><div style="font-size:12px;color:#8896ab">'+finnSym+'</div></div>';
+    try{
+      var r=await fetch("https://finnhub.io/api/v1/quote?symbol="+finnSym+"&token="+apiKey);
+      if(r.ok){
+        var d=await r.json();
+        if(d.c&&d.c>0){livePrices[origSym]=d.c;if(d.pc)livePrevClose[origSym]=d.pc;fetched++}
+        else{failed++;failedSyms.push(origSym)}
+      }else{failed++;failedSyms.push(origSym)}
+    }catch(e){failed++;failedSyms.push(origSym)}
+    if(si<entries.length-1)await new Promise(function(r){setTimeout(r,150)});
+  }
+  // FX rate — ExchangeRate-API (free, no key, CORS enabled), then Finnhub fallback
+  liveFX=null;
+  var fxApis=[
+    {name:"ExchangeRate-API",url:"https://open.exchangerate-api.com/v6/latest/USD",parse:function(d){return(d.rates&&d.rates.CAD)?d.rates.CAD:null}},
+    {name:"currency-exchang",url:"https://currency-exchang.up.railway.app/rates?base=USD",parse:function(d){return(d.rates&&d.rates.CAD)?d.rates.CAD:null}},
+    {name:"Finnhub",url:"https://finnhub.io/api/v1/forex/rates?base=USD&token="+apiKey,parse:function(d){return(d.quote&&d.quote.CAD)?d.quote.CAD:null}}
+  ];
+  for(var fxi=0;fxi<fxApis.length&&!liveFX;fxi++){
+    try{
+      var fxr=await fetch(fxApis[fxi].url);
+      if(fxr.ok){
+        var fxd=await fxr.json();
+        var rate=fxApis[fxi].parse(fxd);
+        if(rate&&rate>1.2&&rate<1.6){liveFX=rate;console.log("FX from "+fxApis[fxi].name+":",liveFX)}
+      }else{console.log("FX "+fxApis[fxi].name+" HTTP "+fxr.status)}
+    }catch(e){console.log("FX "+fxApis[fxi].name+" failed:",e.message)}
+  }
+  if(liveFX){console.log("Final FX rate:",liveFX)}
+  else{console.log("All FX sources failed — keeping previous rate")}
+  if(liveFX)H.fx_rate=liveFX;
+  var updCount=0;
+  H.accounts.forEach(function(a){
+    a.holdings.forEach(function(p){
+      if(livePrices[p.symbol]!==undefined){
+        console.log("Updating",p.symbol,"price:",p.price,"->",livePrices[p.symbol]);
+        p.price=livePrices[p.symbol];
+        updCount++;
+      }
+      p.market=p.qty*p.price;
+    });
+    a.total_market=a.holdings.reduce(function(s,p){return s+p.market},0)+a.cash;
+    console.log("Account",a.account,"total_market:",a.total_market);
+  });
+  console.log("Updated",updCount,"position prices across accounts");
+  H.as_of=new Date().toISOString().slice(0,10)+" "+new Date().toLocaleTimeString();
+  if(fetched>0){
+    try{localStorage.setItem("bp7-hold",JSON.stringify(H))}catch(e){}
+    // Save portfolio snapshot for chart history
+    var snapTotal=0;
+    H.accounts.forEach(function(a){snapTotal+=a.total_market*(a.currency==="USD"?(H.fx_rate||1.3822):1)});
+    saveSnapshot(snapTotal,H.fx_rate||1.3822,livePrices["SPY"]||livePrices["VOO"]||null);
+    console.log("Saved snapshot: $"+snapTotal.toFixed(2)+" CAD, SPY:"+(livePrices["SPY"]||"n/a"));
+    // Refresh chart with new data
+    if(view==="investments")fetchPortfolioHistory(portfolioChart.range);
+  }
+  priceLoading=false;render();
+  var msg=fetched+" symbols updated";
+  if(failed>0)msg+=" ("+failed+" failed: "+failedSyms.join(", ")+")";
+  if(liveFX)msg+=" \u00b7 USD/CAD: "+liveFX.toFixed(4);
+  else msg+=" \u00b7 FX: unchanged";
+  var cadSkipped=Object.keys(cadOnly).length;
+  var covPct=totalMVusd>0?((totalMVusd/(totalMVusd+totalMVcadOnly))*100).toFixed(0):"100";
+  document.getElementById("toast").innerHTML='<div class="toast"><div class="toastt" style="color:'+(failed>fetched?"#fbbf24":"#4ade80")+'">Prices Updated</div><div style="font-size:12px;color:#8896ab">'+msg+'</div><div style="font-size:10px;color:#4a5568;margin-top:4px">'+cadSkipped+' CAD-only ETFs at seed prices (Finnhub free = US exchanges only)</div>'+(failed>fetched?'<div style="font-size:10px;color:#4a5568;margin-top:4px">If all failed, click \u2699 to update your <a href="https://finnhub.io/register" target="_blank" style="color:#38bdf8">Finnhub API key</a></div>':'')+'<button class="b bo" style="margin-top:8px;font-size:11px" onclick="document.getElementById(\'toast\').innerHTML=\'\'">OK</button></div>';
+}
+function saveHoldings(h){try{localStorage.setItem("bp7-hold",JSON.stringify(h))}catch(e){}}
+
+var portfolioChart={range:"1M",data:null,loading:false};
+
+// Portfolio history: snapshot-based approach (free tier doesn't support candle endpoint)
+var SNAP_KEY="bp7-snap";
+function loadSnapshots(){try{var s=localStorage.getItem(SNAP_KEY);return s?JSON.parse(s):[]}catch(e){return[]}}
+function saveSnapshot(val,fxr,spy){
+  var snaps=loadSnapshots();
+  var now=new Date();
+  var dateKey=now.toISOString().slice(0,10);
+  var snap={t:now.getTime(),v:val,fx:fxr,d:dateKey};
+  if(spy)snap.spy=spy;
+  snaps.push(snap);
+  if(snaps.length>8760)snaps=snaps.slice(-8760);
+  try{localStorage.setItem(SNAP_KEY,JSON.stringify(snaps))}catch(e){}
+}
+
+function fetchPortfolioHistory(range){
+  portfolioChart.range=range;
+  var snaps=loadSnapshots();
+  if(snaps.length<2){
+    portfolioChart.data=null;render();
+    document.getElementById("toast").innerHTML='<div class="toast"><div class="toastt" style="color:#38bdf8">Building History</div><div style="font-size:12px;color:#8896ab">Portfolio chart builds over time from your Refresh clicks. You have '+snaps.length+' snapshot'+(snaps.length!==1?'s':'')+' so far — need at least 2.</div><div style="font-size:10px;color:#4a5568;margin-top:4px">Each time you Refresh Live Prices, a snapshot is saved. After a few sessions you\'ll see the chart populate.</div><button class="b bo" style="margin-top:8px;font-size:11px" onclick="document.getElementById(\'toast\').innerHTML=\'\'">OK</button></div>';
+    return;
+  }
+  var now=Date.now();
+  var cutoff;
+  if(range==="1D")cutoff=now-86400000;
+  else if(range==="1W")cutoff=now-7*86400000;
+  else if(range==="1M")cutoff=now-30*86400000;
+  else if(range==="YTD"){var jan1=new Date(new Date().getFullYear(),0,1);cutoff=jan1.getTime()}
+  else cutoff=now-365*86400000;
+
+  var filtered=snaps.filter(function(s){return s.t>=cutoff});
+  var chartSnaps;
+  if(range==="1D"||range==="1W"){
+    // Show all snapshots for short timeframes (no dedup)
+    chartSnaps=filtered.sort(function(a,b){return a.t-b.t});
+  }else{
+    // Deduplicate to one per day for longer timeframes — prefer snapshots with SPY data
+    var byDay={};
+    filtered.forEach(function(s){
+      if(!byDay[s.d]||s.spy||!byDay[s.d].spy)byDay[s.d]=s;
+    });
+    chartSnaps=Object.values(byDay).sort(function(a,b){return a.t-b.t});
+  }
+
+  if(chartSnaps.length<2){
+    render();
+    document.getElementById("toast").innerHTML='<div class="toast"><div class="toastt" style="color:#fbbf24">Not enough data for '+range+'</div><div style="font-size:12px;color:#8896ab">You have '+filtered.length+' snapshot'+(filtered.length!==1?'s':'')+' in this range. Showing previous view.</div><button class="b bo" style="margin-top:8px;font-size:11px" onclick="document.getElementById(\'toast\').innerHTML=\'\'">OK</button></div>';
+    return;
+  }
+  portfolioChart.data=chartSnaps.map(function(s){return{t:s.t,v:s.v,spy:s.spy||null}}).sort(function(a,b){return a.t-b.t});
+  console.log("Chart data: "+portfolioChart.data.length+" points, range="+range+", first=$"+portfolioChart.data[0].v.toFixed(0)+" last=$"+portfolioChart.data[portfolioChart.data.length-1].v.toFixed(0));
+  render();
+}
+function resetHoldings(){
+  localStorage.removeItem("bp7-hold");
+  livePrices={};liveFX=null;
+  render();
+  document.getElementById("toast").innerHTML='<div class="toast"><div class="toastt" style="color:#4ade80">Holdings Reset</div><div style="font-size:12px;color:#8896ab">Reverted to original seed prices</div><button class="b bo" style="margin-top:8px;font-size:11px" onclick="document.getElementById(\'toast\').innerHTML=\'\'">OK</button></div>';
+}
+
+function addHolding(){
+  var acctIdx=parseInt(document.getElementById("ah-acct").value);
+  var sym=document.getElementById("ah-sym").value.trim().toUpperCase();
+  var qty=parseFloat(document.getElementById("ah-qty").value);
+  var price=parseFloat(document.getElementById("ah-price").value);
+  var book=parseFloat(document.getElementById("ah-book").value);
+  var name=document.getElementById("ah-name").value.trim()||sym;
+  if(!sym||isNaN(qty)||isNaN(price)||qty<=0||price<=0){alert("Fill in symbol, shares, and current price.");return}
+  if(isNaN(book))book=price; // Default book to current price if not provided
+  var H=loadHoldings();
+  var acct=H.accounts[acctIdx];
+  if(!acct){alert("Invalid account.");return}
+  // Check if symbol already exists in account
+  var existing=acct.holdings.find(function(h2){return h2.symbol===sym});
+  if(existing){
+    // Add to existing position
+    var oldQty=existing.qty;
+    existing.qty+=qty;
+    existing.book=((existing.book*oldQty)+(book*qty))/(existing.qty); // weighted avg book
+    existing.price=price;
+    existing.market=existing.qty*existing.price;
+  }else{
+    acct.holdings.push({symbol:sym,name:name,qty:qty,price:price,book:book*qty,market:qty*price});
+  }
+  acct.total_market=acct.holdings.reduce(function(s,p){return s+p.market},0)+acct.cash;
+  acct.total_book=acct.holdings.reduce(function(s,p){return s+p.book},0);
+  saveHoldings(H);render();
+  document.getElementById("toast").innerHTML='<div class="toast"><div class="toastt" style="color:#4ade80">Position Added</div><div style="font-size:12px;color:#8896ab">'+qty+' x '+sym+' @ $'+price.toFixed(2)+' added to '+acct.name+'</div><button class="b bo" style="margin-top:8px;font-size:11px" onclick="document.getElementById(\'toast\').innerHTML=\'\'">OK</button></div>';
+}
+
+function removeHolding(acctIdx,sym){
+  var H=loadHoldings();
+  var acct=H.accounts[acctIdx];
+  if(!confirm("Remove "+sym+" from "+acct.name+"?"))return;
+  acct.holdings=acct.holdings.filter(function(h2){return h2.symbol!==sym});
+  acct.total_market=acct.holdings.reduce(function(s,p){return s+p.market},0)+acct.cash;
+  acct.total_book=acct.holdings.reduce(function(s,p){return s+p.book},0);
+  saveHoldings(H);render();
+}
+
+// ─── FILE DETECTION & PARSING ───
+function detectSrc(c,fn){
+  var f=(fn||"").toLowerCase(),t=typeof c==="string"?c:"";
+  if(t.includes("American Express")||t.includes("Cobalt")||t.includes("Bonvoy"))return"Amex";
+  if(t.includes("Transaction Type")&&t.includes("First Bank Card"))return"BMO Chequing";
+  if(t.includes("Item #")&&t.includes("Card #")&&t.includes("Transaction Date"))return"Mastercard";
+  if(/amex|summary/i.test(f))return"Amex";
+  if(/mastercard|mc/i.test(f))return"Mastercard";
+  if(/chequing|bmo|statement/i.test(f))return"BMO Chequing";
+  return null;
+}
+
+function detectAmexCard(wb){
+  var sh=wb.Sheets[wb.SheetNames[0]];
+  var raw=XLSX.utils.sheet_to_json(sh,{header:1});
+  for(var i=0;i<Math.min(5,raw.length);i++){
+    var row=String(raw[i]||"");
+    if(/Cobalt/i.test(row))return"Amex Cobalt";
+    if(/Bonvoy|Marriott/i.test(row))return"Amex Bonvoy";
+  }
+  return"Amex";
+}
+
+function parseAmex(wb){
+  var cardName=detectAmexCard(wb);
+  var sh=wb.Sheets[wb.SheetNames[0]];
+  var raw=XLSX.utils.sheet_to_json(sh,{header:1});
+  var hi=raw.findIndex(function(r){return r[0]==="Date"&&r[1]==="Date Processed"});
+  if(hi===-1)hi=raw.findIndex(function(r){return String(r[0]||"").includes("Date")});
+  if(hi===-1)return[];
+  var out=[];
+  for(var i=hi+1;i<raw.length;i++){
+    var row=raw[i];if(!row[0])continue;
+    var desc=String(row[2]||"").trim();
+    var as=String(row[3]||"0").replace(/[$,]/g,"");
+    var amt=parseFloat(as);if(isNaN(amt))continue;
+    var ds=String(row[0]).trim();
+    var m=ds.match(/(\d{1,2})\s+(\w+\.?)\s+(\d{4})/);
+    if(!m)continue;
+    var dt=new Date(m[2].replace(".","")+" "+m[1]+", "+m[3]);
+    if(isNaN(dt.getTime()))continue;
+    if(isPay(desc))continue;
+    var c=cat(desc);
+    out.push({date:dt.toISOString().slice(0,10),description:desc,amount:Math.abs(amt),type:c==="Investments"?"Investment":(amt<0?"Income":"Expense"),source:cardName,category:c});
+  }
+  return out;
+}
+
+function parseBMO(text){
+  var lines=text.split("\n").filter(function(l){return l.trim()});
+  var hi=lines.findIndex(function(l){return l.includes("First Bank Card")&&l.includes("Transaction Type")});
+  if(hi===-1)return[];
+  var out=[];
+  for(var i=hi+1;i<lines.length;i++){
+    var line=lines[i].trim();if(!line)continue;
+    var p=Papa.parse(line,{header:false});
+    if(!p.data||!p.data[0]||p.data[0].length<5)continue;
+    var row=p.data[0],desc=String(row[4]||"").trim();
+    var tt=String(row[1]||"").trim().toUpperCase();
+    var amt=parseFloat(row[3]);if(isNaN(amt))continue;
+    var ds=String(row[2]).replace(/'/g,"").trim();
+    if(ds.length<8)continue;
+    var dt=new Date(ds.slice(0,4)+"-"+ds.slice(4,6)+"-"+ds.slice(6,8));
+    if(isNaN(dt.getTime()))continue;
+    if(isPay(desc))continue;
+    var c=cat(desc);
+    out.push({date:dt.toISOString().slice(0,10),description:desc,amount:Math.abs(amt),type:c==="Investments"?"Investment":(tt==="CREDIT"?"Income":"Expense"),source:"BMO Chequing",category:c});
+  }
+  return out;
+}
+
+function parseMastercard(text){
+  var lines=text.split("\n").filter(function(l){return l.trim()});
+  // Find header row: Item #,Card #,Transaction Date,Posting Date,Transaction Amount,Description
+  var hi=lines.findIndex(function(l){return l.includes("Item #")&&l.includes("Card #")&&l.includes("Transaction Date")});
+  if(hi===-1)return[];
+  var out=[];
+  for(var i=hi+1;i<lines.length;i++){
+    var line=lines[i].trim();if(!line)continue;
+    var p=Papa.parse(line,{header:false});
+    if(!p.data||!p.data[0]||p.data[0].length<6)continue;
+    var row=p.data[0];
+    var desc=String(row[5]||"").trim();
+    var amt=parseFloat(row[4]);if(isNaN(amt))continue;
+    var ds=String(row[2]).replace(/'/g,"").trim();
+    if(ds.length<8)continue;
+    var dt=new Date(ds.slice(0,4)+"-"+ds.slice(4,6)+"-"+ds.slice(6,8));
+    if(isNaN(dt.getTime()))continue;
+    if(isPay(desc))continue;
+    var c=cat(desc);
+    // Positive = expense, negative = credit/payment on Mastercard
+    var isCredit=amt<0;
+    out.push({date:dt.toISOString().slice(0,10),description:desc,amount:Math.abs(amt),type:c==="Investments"?"Investment":(isCredit?"Income":"Expense"),source:"BMO Mastercard",category:c});
+  }
+  return out;
+}
+
+// ─── UPLOAD ───
+async function handleFiles(files){
+  document.getElementById("ubtn").textContent="Processing...";
+  var ek=new Set(T.map(tk)),tn=0,td=0,res=[];
+  for(var fi=0;fi<files.length;fi++){
+    var file=files[fi],nt=[];
+    if(/\.pdf$/i.test(file.name)){res.push({f:file.name,ok:false,m:"PDF detected — upload this file to Claude to extract transactions, then re-upload the resulting CSV here"});continue}
+    var isXl=/\.xls(x)?$/i.test(file.name);
+    if(isXl){
+      var buf=await file.arrayBuffer();
+      var wb=XLSX.read(buf,{type:"array"});
+      var src=detectSrc(XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]),file.name);
+      if(src==="Amex")nt=parseAmex(wb);
+      else{res.push({f:file.name,ok:false,m:"Could not detect account type"});continue}
+    }else{
+      var text=await file.text();
+      var src=detectSrc(text,file.name);
+      if(src==="BMO Chequing")nt=parseBMO(text);
+      else if(src==="Mastercard")nt=parseMastercard(text);
+      else{res.push({f:file.name,ok:false,m:"Could not detect account type"});continue}
+    }
+    var du=0,ad=0;
+    for(var j=0;j<nt.length;j++){
+      var k=tk(nt[j]);
+      if(ek.has(k)){du++}
+      else{ek.add(k);T.push(nt[j]);ad++}
+    }
+    tn+=ad;td+=du;
+    res.push({f:file.name,ok:true,src:nt[0]?nt[0].source:"?",ad:ad,du:du});
+  }
+  T.sort(function(a,b){return b.date.localeCompare(a.date)});
+  save();
+  var el=document.getElementById("toast");
+  var h='<div class="toast"><div class="toastt">Upload Complete \u2014 '+tn+' new, '+td+' duplicates skipped</div>';
+  for(var i=0;i<res.length;i++){
+    var r=res[i];
+    h+='<div style="font-size:12px;margin-top:4px;color:'+(r.ok?'#86efac':'#fca5a5')+'">'+r.f+': '+(r.ok?r.src+' \u2192 '+r.ad+' added, '+r.du+' dupes':r.m)+'</div>';
+  }
+  h+='<button class="b bo" style="margin-top:8px;font-size:11px" onclick="document.getElementById(\'toast\').innerHTML=\'\'">Dismiss</button></div>';
+  el.innerHTML=h;
+  render();
+  document.getElementById("ubtn").innerHTML='Upload Statements<input type="file" id="fi" multiple accept=".csv,.xls,.xlsx,.pdf">';
+  document.getElementById("fi").addEventListener("change",function(e){handleFiles(e.target.files)});
+}
+
+function exportCSV(){
+  if(!T.length)return;
+  var csv="Date,Description,Amount,Type,Source,Category\n";
+  for(var i=0;i<T.length;i++){
+    var t=T[i];
+    csv+='"'+t.date+'","'+t.description.replace(/"/g,'""')+'",'+t.amount.toFixed(2)+',"'+t.type+'","'+t.source+'","'+t.category+'"\n';
+  }
+  var b=new Blob([csv],{type:"text/csv"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(b);
+  a.download="budget_pulse_"+new Date().toISOString().slice(0,10)+".csv";
+  a.click();
+}
+
+function resetAll(){
+  if(!confirm("Clear all data and reload from defaults?"))return;
+  localStorage.removeItem("bp7-tx");localStorage.removeItem("bp7-rules");localStorage.removeItem("bp7-cats");localStorage.removeItem("bp7-hold");
+  T=[];load();document.getElementById("toast").innerHTML="";render();
+}
+
+// ─── NAVIGATION ───
+function setV(v){view=v;if(v==="investments")startAutoRefresh();else stopAutoRefresh();render()}
+function renderKeepFocus(){
+  var el=document.getElementById("txn-search");
+  var pos=el?el.selectionStart:0;
+  render();
+  var el2=document.getElementById("txn-search");
+  if(el2){el2.focus();el2.selectionStart=el2.selectionEnd=pos}
+}
+function toggleCat(c){expCat=expCat===c?null:c;render()}
+
+// Chart hover interaction
+function pcHover(evt){
+  var svg=document.getElementById("pc-svg");
+  if(!svg||!window._pcCoords)return;
+  var pts=window._pcCoords;
+  // Use SVG's own coordinate system for accurate positioning
+  var pt2=svg.createSVGPoint();
+  pt2.x=evt.clientX;pt2.y=evt.clientY;
+  var svgPt=pt2.matrixTransform(svg.getScreenCTM().inverse());
+  var mouseX=svgPt.x;
+  // Find closest data point by X coordinate
+  var closest=0,closestDist=Infinity;
+  for(var i=0;i<pts.length;i++){
+    var d=Math.abs(pts[i].x-mouseX);
+    if(d<closestDist){closestDist=d;closest=i}
+  }
+  var pt=pts[closest];
+  var vline=document.getElementById("pc-vline");
+  var dot=document.getElementById("pc-dot");
+  var tip=document.getElementById("pc-tip");
+  var tipVal=document.getElementById("pc-tip-val");
+  var tipDate=document.getElementById("pc-tip-date");
+  var tipChg=document.getElementById("pc-tip-chg");
+  if(!vline||!dot||!tip)return;
+  vline.setAttribute("x1",pt.x);vline.setAttribute("x2",pt.x);vline.setAttribute("visibility","visible");
+  dot.setAttribute("cx",pt.x);dot.setAttribute("cy",pt.y);dot.setAttribute("visibility","visible");
+  // SPY dot
+  var dotSpy=document.getElementById("pc-dot-spy");
+  if(dotSpy&&pt.spyY!==undefined){dotSpy.setAttribute("cx",pt.x);dotSpy.setAttribute("cy",pt.spyY);dotSpy.setAttribute("visibility","visible")}
+  else if(dotSpy){dotSpy.setAttribute("visibility","hidden")}
+  var dt=new Date(pt.t);
+  var dtStr=dt.toLocaleDateString("en-CA",{month:"short",day:"numeric",year:"numeric"})+" "+dt.toLocaleTimeString("en-CA",{hour:"2-digit",minute:"2-digit"});
+  var chgFromStart=pt.v-window._pcStartV;
+  var chgPct2=window._pcStartV>0?((chgFromStart/window._pcStartV)*100).toFixed(2):"0";
+  var chgCol=chgFromStart>=0?"#4ade80":"#f87171";
+  tipVal.textContent="$"+pt.v.toLocaleString("en-CA",{minimumFractionDigits:2,maximumFractionDigits:2});
+  tipDate.textContent=dtStr;
+  tipChg.innerHTML='<span style="color:'+chgCol+'">Portfolio: '+(chgFromStart>=0?"+":"")+chgPct2+'%</span>';
+  // SPY line in tooltip
+  var tipSpy=document.getElementById("pc-tip-spy");
+  if(tipSpy&&pt.spy&&window._pcSpyStart>0){
+    var spyChgPct=((pt.spy/window._pcSpyStart-1)*100).toFixed(2);
+    var spyCol=spyChgPct>=0?"#fbbf24":"#f87171";
+    tipSpy.innerHTML='<span style="color:'+spyCol+'">S&P 500: '+(spyChgPct>=0?"+":"")+spyChgPct+'% ($'+pt.spy.toFixed(2)+')</span>';
+  }else if(tipSpy){tipSpy.innerHTML=""}
+  tip.style.display="block";
+  // Position tooltip
+  var tipPctX=(pt.x/680)*100;
+  if(tipPctX>60){tip.style.right=(100-tipPctX+2)+"%";tip.style.left="auto"}
+  else{tip.style.left=(tipPctX+2)+"%";tip.style.right="auto"}
+}
+function pcLeave(){
+  var vline=document.getElementById("pc-vline");
+  var dot=document.getElementById("pc-dot");
+  var dotSpy=document.getElementById("pc-dot-spy");
+  var tip=document.getElementById("pc-tip");
+  if(vline)vline.setAttribute("visibility","hidden");
+  if(dot)dot.setAttribute("visibility","hidden");
+  if(dotSpy)dotSpy.setAttribute("visibility","hidden");
+  if(tip)tip.style.display="none";
+}
+
+// Auto-refresh timer (every 60 seconds when on investments tab)
+var autoRefreshInterval=null;
+function startAutoRefresh(){
+  if(autoRefreshInterval)return;
+  autoRefreshInterval=setInterval(function(){
+    if(view==="investments"&&!priceLoading&&getFinnhubKey()){
+      console.log("Auto-refresh at",new Date().toLocaleTimeString());
+      fetchLivePrices();
+    }
+  },60000);
+  console.log("Auto-refresh started (60s interval)");
+}
+function stopAutoRefresh(){
+  if(autoRefreshInterval){clearInterval(autoRefreshInterval);autoRefreshInterval=null;console.log("Auto-refresh stopped")}
+}
+function setMo(m){sMo=m;render()}
+function setSrc(s){sSrc=s;render()}
+function setTyp(t){sTyp=t;render()}
+function setCat(c){sCat=c;render()}
+function startE(i){eIdx=i;render()}
+
+function updCat(i,c){
+  if(c==="__new__"){newCat(i);return}
+  var oldCat=T[i].category;
+  if(oldCat===c){eIdx=null;render();return}
+  var desc=T[i].description;
+  var isET=/INTERAC ETRNSFR|INTERAC e-Transfer/i.test(desc);
+  // Always apply to this transaction
+  T[i].category=c;
+  if(c==="Investments")T[i].type="Investment";
+  else if(T[i].type==="Investment")T[i].type="Expense";
+  eIdx=null;save();
+  if(isET){render();return}
+  // Check for other matching transactions
+  var mk2=getMerchantKey(desc);
+  var pat;try{pat=new RegExp(mk2,"i")}catch(e){pat=null}
+  if(!pat||mk2.length<=2){render();return}
+  var matches=[];
+  for(var j=0;j<T.length;j++){
+    if(j!==i&&pat.test(T[j].description)&&T[j].category!==c)matches.push(j);
+  }
+  if(matches.length>0&&confirm("Apply \""+c+"\" to all "+matches.length+" other transaction"+(matches.length>1?"s":"")+" matching \""+mk2+"\"?")){
+    if(mk2.length>2)addRule(mk2,c);
+    for(var k=0;k<matches.length;k++){
+      T[matches[k]].category=c;
+      if(c==="Investments")T[matches[k]].type="Investment";
+      else if(T[matches[k]].type==="Investment")T[matches[k]].type="Expense";
+    }
+    save();render();
+    document.getElementById("toast").innerHTML='<div class="toast" style="background:#0c152e;border-color:#38bdf844"><div class="toastt" style="color:#38bdf8">Rule Saved</div><div style="font-size:12px;color:#8896ab">Recategorized '+matches.length+' transactions matching "'+mk2+'" \u2192 '+c+'</div><button class="b bo" style="margin-top:8px;font-size:11px" onclick="document.getElementById(\'toast\').innerHTML=\'\'">Dismiss</button></div>';
+  }else{
+    render();
+  }
+}
+
+function newCat(idx){
+  var n=prompt("Enter new category name:");
+  if(!n||!n.trim()){eIdx=null;render();return}
+  n=n.trim();
+  if(ALLC.indexOf(n)===-1){ALLC.push(n);var hues=["#e74c3c","#3498db","#2ecc71","#f39c12","#9b59b6","#1abc9c","#e67e22","#00bcd4","#ff5722","#607d8b"];CC[n]=hues[ALLC.length%hues.length];saveCustomCats()}
+  updCat(idx,n);
+}
+
+function delTxn(idx){
+  if(!confirm("Delete this transaction?\n"+T[idx].date+" — "+T[idx].description+" — $"+T[idx].amount.toFixed(2)))return;
+  T.splice(idx,1);save();render();
+}
+
+function addTxnManual(){
+  var d=document.getElementById("mt-date").value;
+  var desc=document.getElementById("mt-desc").value.trim();
+  var amt=parseFloat(document.getElementById("mt-amt").value);
+  var typ=document.getElementById("mt-type").value;
+  var src=document.getElementById("mt-src").value.trim()||"Manual";
+  if(!d||!desc||isNaN(amt)){alert("Fill in date, description, and amount.");return}
+  var c=cat(desc);
+  T.push({date:d,description:desc,amount:Math.abs(amt),type:typ,source:src,category:c});
+  T.sort(function(a,b){return b.date.localeCompare(a.date)});
+  save();render();
+  document.getElementById("toast").innerHTML='<div class="toast"><div class="toastt">Transaction Added</div><div style="font-size:12px;color:#86efac">'+desc+' — $'+Math.abs(amt).toFixed(2)+' ('+c+')</div><button class="b bo" style="margin-top:8px;font-size:11px" onclick="document.getElementById(\'toast\').innerHTML=\'\'">OK</button></div>';
+}
+
+function addCatUI(){
+  var n=prompt("Enter new category name:");
+  if(!n||!n.trim())return;
+  n=n.trim();
+  if(ALLC.indexOf(n)!==-1){alert("Category \""+n+"\" already exists.");return}
+  ALLC.push(n);
+  var hues=["#e74c3c","#3498db","#2ecc71","#f39c12","#9b59b6","#1abc9c","#e67e22","#00bcd4","#ff5722","#607d8b"];
+  CC[n]=hues[ALLC.length%hues.length];
+  saveCustomCats();render();
+}
+
+function delCat(cat){
+  var count=T.filter(function(t){return t.category===cat}).length;
+  if(count>0){
+    if(!confirm("Category \""+cat+"\" has "+count+" transaction"+(count>1?"s":"")+". Move them to Uncategorized and delete?"))return;
+    T.forEach(function(t){if(t.category===cat)t.category="Uncategorized"});
+    save();
+  }else{
+    if(!confirm("Delete category \""+cat+"\"?"))return;
+  }
+  var idx=ALLC.indexOf(cat);if(idx>-1)ALLC.splice(idx,1);
+  delete CC[cat];
+  delete BUDGETS[cat];delete BUDGETS["inc:"+cat];
+  saveCustomCats();saveBudgets();render();
+}
+
+// ─── KPI HELPER ───
+function kpi(l,v,c,s){return'<div class="c"><div class="kl">'+l+'</div><div class="kv" style="color:'+c+'">'+v+'</div><div class="ks">'+s+'</div></div>'}
+
+// ─── MAIN RENDER ───
+function render(){
+  var app=document.getElementById("app");
+  var mos=[...new Set(T.map(function(t){return mk(t.date)}))].sort().reverse();
+  document.getElementById("sub").textContent=T.length+" transactions \u00b7 "+mos.length+" months";
+
+  if(!T.length){
+    app.innerHTML='<div class="empty"><div style="font-size:48px;margin-bottom:16px">\ud83d\udcca</div><h2>No transactions yet</h2><p>Upload Amex (.xls), BMO Chequing (.csv), or Mastercard (.csv) statements.</p></div>';
+    return;
+  }
+
+  var fil=T.filter(function(t){
+    if(sMo!=="all"){
+      if(sMo.indexOf("ytd-")===0){if(t.date.slice(0,4)!==sMo.slice(4))return false}
+      else if(mk(t.date)!==sMo)return false;
+    }
+    if(sSrc!=="all"&&t.source!==sSrc)return false;
+    if(sTyp!=="all"&&t.type!==sTyp)return false;
+    if(sCat!=="all"&&t.category!==sCat)return false;
+    if(sQ&&t.description.toLowerCase().indexOf(sQ.toLowerCase())===-1)return false;
+    return true;
+  });
+
+  var exp=fil.filter(function(t){return t.type==="Expense"});
+  var inc=fil.filter(function(t){return t.type==="Income"});
+  var inv=fil.filter(function(t){return t.type==="Investment"});
+  var tE=exp.reduce(function(s,t){return s+t.amount},0);
+  var tI=inc.reduce(function(s,t){return s+t.amount},0);
+  var tInv=inv.reduce(function(s,t){return s+t.amount},0);
+
+  var byCat={};
+  exp.forEach(function(t){byCat[t.category]=(byCat[t.category]||0)+t.amount});
+  var catT=Object.entries(byCat).map(function(e){return{c:e[0],t:e[1],n:exp.filter(function(x){return x.category===e[0]}).length}}).sort(function(a,b){return b.t-a.t});
+
+  var moSrc=sMo.indexOf("ytd-")===0?T.filter(function(t){return t.date.slice(0,4)===sMo.slice(4)}):T;
+  var byMo={};
+  moSrc.forEach(function(t){var m=mk(t.date);if(!byMo[m])byMo[m]={i:0,e:0,v:0};if(t.type==="Income")byMo[m].i+=t.amount;else if(t.type==="Investment")byMo[m].v+=t.amount;else byMo[m].e+=t.amount});
+  var moD=Object.entries(byMo).sort(function(a,b){return a[0].localeCompare(b[0])}).map(function(e){return{m:e[0],l:fmk(e[0]),i:e[1].i,e:e[1].e,v:e[1].v}});
+
+  var h='';
+
+  // ─── Tabs ───
+  h+='<div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px">';
+  h+='<div class="ts">';
+  ["overview","budget","transactions","investments","rules","insights"].forEach(function(v){
+    var lb={overview:"Overview",budget:"Budget",transactions:"Transactions",investments:"Investments",rules:"Rules",insights:"Insights"}[v];
+    h+='<button class="t'+(view===v?' on':'')+'" onclick="setV(\''+v+'\')">'+lb+'</button>';
+  });
+  h+='</div><div style="flex:1"></div>';
+  var curYr=new Date().getFullYear().toString();
+  var yrs=[...new Set(T.map(function(t){return t.date.slice(0,4)}))].sort().reverse();
+  h+='<select onchange="setMo(this.value)" style="padding:6px 12px;border-radius:6px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:12px;font-family:inherit"><option value="all"'+(sMo==="all"?" selected":"")+'>All Time</option>';
+  yrs.forEach(function(y){h+='<option value="ytd-'+y+'"'+(sMo==="ytd-"+y?" selected":"")+'>'+y+' YTD</option>'});
+  mos.forEach(function(m){h+='<option value="'+m+'"'+(sMo===m?" selected":"")+'>'+fmk(m)+'</option>'});
+  h+='</select></div>';
+
+  // ═══════════════════ OVERVIEW ═══════════════════
+  if(view==="overview"){
+    var filMos=[...new Set(fil.map(function(t){return mk(t.date)}))];
+    var numMo=filMos.length||1;
+    var net=tI-tE-tInv;
+    var avgMoExp=tE/numMo;
+    var avgMoInc=tI/numMo;
+    var avgDaily=tE/(numMo*30.44);
+
+    var fixedCats={"Rent / Housing":1,"Insurance":1,"Car Insurance":1,"Home Insurance":1,"Telecom":1,"Auto & Tolls":1,"Utilities":1,"Internet":1};
+    var fixedExp=exp.filter(function(t){return fixedCats[t.category]}).reduce(function(s,t){return s+t.amount},0);
+    var disc=tE-fixedExp;
+
+    var moExps=moD.map(function(m){return m.e});
+    var meanMo=moExps.reduce(function(s,v){return s+v},0)/(moExps.length||1);
+    var latestMo=moD.length>0?moD[moD.length-1]:null;
+    var vel=latestMo&&meanMo>0?(((latestMo.e-meanMo)/meanMo)*100).toFixed(1):"0";
+    var velCol=parseFloat(vel)>10?"#f87171":parseFloat(vel)<-10?"#4ade80":"#fbbf24";
+    var topCat=catT[0];
+    var monthlyNet=avgMoInc-avgMoExp;
+    var runway=monthlyNet<0?Math.abs(Math.round(avgMoInc/avgDaily))+" days covers spending":fm(monthlyNet)+"/mo surplus";
+
+    // KPI Row 1
+    h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">';
+    h+=kpi("Income",fm(tI),"#4ade80",fm(avgMoInc)+"/mo");
+    h+=kpi("Spent",fm(tE),"#f87171",fm(avgMoExp)+"/mo");
+    h+=kpi("Invested",fm(tInv),"#a78bfa",tI>0?((tInv/tI)*100).toFixed(1)+"% of income":"\u2014");
+    h+=kpi("Net",fm(net),net>=0?"#4ade80":"#f87171",runway);
+    h+='</div>';
+
+    // KPI Row 2
+    h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">';
+    h+=kpi("Daily Burn",fm(avgDaily),"#fb923c",fm(avgDaily*365)+"/yr projected");
+    h+=kpi("Fixed vs Flex",((fixedExp/tE)*100||0).toFixed(0)+"% fixed","#8896ab",fm(fixedExp/numMo)+"/mo locked \u00b7 "+fm(disc/numMo)+"/mo flex");
+    h+=kpi("Top Category",topCat?topCat.c:"\u2014","#f39c12",topCat?fm(topCat.t)+" ("+((topCat.t/tE)*100).toFixed(0)+"% of spend)":"");
+    h+=kpi("Momentum",(parseFloat(vel)>0?"+":"")+vel+"%",velCol,latestMo?fmk(latestMo.m)+": "+fm(latestMo.e)+" vs "+fm(meanMo)+" avg":"\u2014");
+    h+='</div>';
+
+    // Monthly Cash Flow Chart
+    h+='<div class="c" style="margin-bottom:14px"><div class="ct">Monthly Cash Flow</div>';
+    if(moD.length){
+      var mx=Math.max.apply(null,moD.map(function(m){return Math.max(m.i,m.e,m.v||0)}))||1;
+      h+='<div class="mc">';
+      moD.forEach(function(m){
+        var ih=Math.max(m.i/mx*150,2),eh=Math.max(m.e/mx*150,2),vh=(m.v||0)>0?Math.max(m.v/mx*150,2):0;
+        h+='<div class="mcol"><div style="display:flex;gap:2px;align-items:flex-end;width:100%;height:160px">';
+        h+='<div class="mb" style="height:'+ih+'px;background:#4ade8055;flex:1"></div>';
+        h+='<div class="mb" style="height:'+eh+'px;background:#f8717155;flex:1"></div>';
+        h+='<div class="mb" style="height:'+vh+'px;background:#a78bfa55;flex:1"></div>';
+        h+='</div><div class="ml2">'+m.l.slice(0,3)+'</div></div>';
+      });
+      h+='</div>';
+      h+='<div style="display:flex;gap:16px;margin-top:8px;justify-content:center">';
+      ["Income:#4ade8055","Expenses:#f8717155","Invested:#a78bfa55"].forEach(function(x){var p=x.split(":");h+='<span style="font-size:10px;color:#4a5568"><span style="display:inline-block;width:8px;height:8px;background:'+p[1]+';border-radius:2px;margin-right:4px"></span>'+p[0]+'</span>'});
+      h+='</div>';
+      // Monthly table
+      h+='<table style="width:100%;margin-top:12px;font-size:10px"><thead><tr>';
+      ["Month","Income","Expenses","Invested","Net","MoM \u0394"].forEach(function(x){h+='<th'+(x!=="Month"?' class="r"':'')+' style="color:#3d4a5c;font-weight:500;padding:4px 6px">'+x+'</th>'});
+      h+='</tr></thead><tbody>';
+      moD.forEach(function(m,idx){
+        var mN=m.i-m.e-(m.v||0);
+        var mom=idx>0?m.e-moD[idx-1].e:0;
+        var momS=idx>0?((mom>=0?"+":"")+fm(mom)):"\u2014";
+        h+='<tr><td style="padding:3px 6px;color:#8896ab">'+m.l+'</td>';
+        h+='<td class="r m" style="padding:3px 6px;color:#4ade80">'+fm(m.i)+'</td>';
+        h+='<td class="r m" style="padding:3px 6px;color:#f87171">'+fm(m.e)+'</td>';
+        h+='<td class="r m" style="padding:3px 6px;color:#a78bfa">'+fm(m.v||0)+'</td>';
+        h+='<td class="r m" style="padding:3px 6px;color:'+(mN>=0?'#4ade80':'#f87171')+'">'+fm(mN)+'</td>';
+        h+='<td class="r m" style="padding:3px 6px;color:'+(idx===0?'#4a5568':mom>0?'#f87171':'#4ade80')+'">'+momS+'</td></tr>';
+      });
+      h+='</tbody></table>';
+    }
+    h+='</div>';
+
+    // Category Breakdown
+    h+='<div class="c" style="margin-bottom:14px"><div class="ct">Expense Breakdown</div><div class="tw"><table>';
+    h+='<thead><tr><th>Category</th><th class="r">Amount</th><th class="r">Avg/Mo</th><th class="r">Txns</th><th class="r">%</th><th style="width:20%"></th></tr></thead><tbody>';
+    catT.forEach(function(c2){
+      var pct=(c2.t/tE*100).toFixed(1),col=CC[c2.c]||"#7f8c8d";
+      var isExp=expCat===c2.c;
+      h+='<tr style="cursor:pointer'+(isExp?';background:#0c152e':'')+'" onclick="toggleCat(\''+c2.c.replace(/'/g,"\\'")+'\')">';
+      h+='<td><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+col+';margin-right:8px;vertical-align:middle"></span><span style="color:'+(isExp?'#eef1f6':'inherit')+'">'+c2.c+'</span> <span style="font-size:9px;color:#3d4a5c">'+(isExp?'\u25B2':'\u25BC')+'</span></td>';
+      h+='<td class="r m" style="color:#eef1f6">'+fm(c2.t)+'</td>';
+      h+='<td class="r m" style="color:#8896ab">'+fm(c2.t/numMo)+'</td>';
+      h+='<td class="r" style="color:#8896ab">'+c2.n+'</td>';
+      h+='<td class="r" style="color:#8896ab">'+pct+'%</td>';
+      h+='<td><div style="height:5px;background:#151d30;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:3px"></div></div></td></tr>';
+      if(isExp){
+        var catTxns=exp.filter(function(t){return t.category===c2.c}).sort(function(a,b){return b.amount-a.amount});
+        catTxns.forEach(function(ct,ci){
+          h+='<tr style="background:#080e1a">';
+          h+='<td style="padding-left:28px;font-size:10px;color:#8896ab">'+ct.date+'</td>';
+          h+='<td colspan="2" style="font-size:10px;color:#b8c0cc">'+ct.description.slice(0,45)+'</td>';
+          h+='<td class="r m" style="font-size:10px;color:#eef1f6">'+fm(ct.amount)+'</td>';
+          h+='<td style="font-size:9px;color:#4a5568">'+ct.source+'</td>';
+          h+='<td></td></tr>';
+        });
+      }
+    });
+    h+='</tbody></table></div></div>';
+
+    // Top Merchants
+    h+='<div class="c" style="margin-bottom:14px"><div class="ct">Top 10 Merchants</div>';
+    var byM={};
+    var merchExcl=/INTERAC ETRNSFR|INTERAC e-Transfer|\[CK\]NO\.|\[CW\]INTERAC|Cheque, NO\.|INTERAC e-Transfer Sent|\[IB\]\s|ABM Withdrawal/i;
+    exp.filter(function(t){return !merchExcl.test(t.description)}).forEach(function(t){var k=t.description.replace(/\s{2,}.*$/,"").replace(/\s+\d{3,}.*$/,"").replace(/\s+#\d+.*$/,"").trim().slice(0,30);if(!byM[k])byM[k]={total:0,count:0,cat:t.category};byM[k].total+=t.amount;byM[k].count++});
+    var mL=Object.entries(byM).sort(function(a,b){return b[1].total-a[1].total}).slice(0,10);
+    var mMax=mL[0]?mL[0][1].total:1;
+    mL.forEach(function(e){var col=CC[e[1].cat]||"#7f8c8d";h+='<div class="br"><div class="bl">'+e[0]+'</div><div class="bt"><div class="bf" style="width:'+(e[1].total/mMax*100).toFixed(1)+'%;background:'+col+'"></div></div><div class="ba">'+fm(e[1].total)+'</div><div class="bp2">'+e[1].count+'x</div></div>'});
+    h+='</div>';
+
+    // MoM Swings
+    if(moD.length>=2){
+      h+='<div class="c"><div class="ct">Month-over-Month Expense Swings</div>';
+      var moExp2={};
+      T.filter(function(t){return t.type==="Expense"}).forEach(function(t){
+        var m=mk(t.date);if(!moExp2[m])moExp2[m]={};if(!moExp2[m][t.category])moExp2[m][t.category]={total:0,txns:[]};
+        moExp2[m][t.category].total+=t.amount;moExp2[m][t.category].txns.push(t);
+      });
+      var swings=[];
+      for(var si=1;si<moD.length;si++){
+        var prev=moD[si-1],curr=moD[si];
+        var diff=curr.e-prev.e;
+        var pctC=prev.e>0?((diff/prev.e)*100):0;
+        if(Math.abs(pctC)>=10||Math.abs(diff)>=200){
+          var allCats2={};
+          if(moExp2[prev.m])Object.keys(moExp2[prev.m]).forEach(function(c){allCats2[c]=true});
+          if(moExp2[curr.m])Object.keys(moExp2[curr.m]).forEach(function(c){allCats2[c]=true});
+          var catDiffs=[];
+          Object.keys(allCats2).forEach(function(c){
+            var pv=(moExp2[prev.m]&&moExp2[prev.m][c])?moExp2[prev.m][c].total:0;
+            var cv=(moExp2[curr.m]&&moExp2[curr.m][c])?moExp2[curr.m][c].total:0;
+            var d=cv-pv;
+            if(Math.abs(d)>10){
+              var top3=d>0?((moExp2[curr.m]&&moExp2[curr.m][c])?moExp2[curr.m][c].txns:[]):((moExp2[prev.m]&&moExp2[prev.m][c])?moExp2[prev.m][c].txns:[]);
+              top3=top3.slice().sort(function(a,b){return b.amount-a.amount}).slice(0,3);
+              catDiffs.push({cat:c,prev:pv,curr:cv,diff:d,txns:top3});
+            }
+          });
+          catDiffs.sort(function(a,b){return Math.abs(b.diff)-Math.abs(a.diff)});
+          swings.push({pM:prev.m,cM:curr.m,diff:diff,pct:pctC,pE:prev.e,cE:curr.e,catDiffs:catDiffs.slice(0,5)});
+        }
+      }
+      if(swings.length===0){h+='<div style="color:#3d4a5c;font-size:13px;padding:12px 0">No significant swings detected.</div>'}
+      else{
+        swings.forEach(function(sw){
+          var up=sw.diff>0,ar=up?"\u2191":"\u2193",cl=up?"#f87171":"#4ade80";
+          h+='<div style="border:1px solid #1a2236;border-radius:8px;padding:12px;margin-bottom:10px;background:#0a1020">';
+          h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">';
+          h+='<span style="font-size:13px;font-weight:600;color:#eef1f6">'+fmk(sw.pM)+' \u2192 '+fmk(sw.cM)+'</span>';
+          h+='<span class="m" style="font-size:12px;font-weight:700;color:'+cl+'">'+ar+' '+(up?"+":"")+fm(sw.diff)+' ('+sw.pct.toFixed(1)+'%)</span></div>';
+          if(sw.catDiffs.length>0){
+            h+='<div style="font-size:9px;color:#3d4a5c;margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Category Drivers</div>';
+            sw.catDiffs.forEach(function(cd){
+              var cc2=cd.diff>0?"#f87171":"#4ade80",ca=cd.diff>0?"\u2191":"\u2193",col2=CC[cd.cat]||"#7f8c8d";
+              h+='<div style="margin-bottom:6px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">';
+              h+='<span style="width:6px;height:6px;border-radius:2px;background:'+col2+'"></span>';
+              h+='<span style="font-size:11px;color:#b8c0cc">'+cd.cat+'</span>';
+              h+='<span class="m" style="font-size:10px;color:#8896ab">'+fm(cd.prev)+' \u2192 '+fm(cd.curr)+'</span>';
+              h+='<span class="m" style="font-size:10px;font-weight:600;color:'+cc2+'">'+ca+' '+(cd.diff>0?"+":"")+fm(cd.diff)+'</span></div>';
+              if(cd.txns.length>0){
+                h+='<div style="margin-left:14px;border-left:2px solid #1a2236;padding-left:8px">';
+                cd.txns.forEach(function(tx){h+='<div style="display:flex;justify-content:space-between;gap:6px;padding:1px 0;font-size:10px"><span style="color:#4a5568">'+tx.date+'</span><span style="color:#8896ab;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+tx.description+'</span><span class="m" style="color:#b8c0cc">'+fm(tx.amount)+'</span></div>'});
+                h+='</div>';
+              }
+              h+='</div>';
+            });
+          }
+          h+='</div>';
+        });
+      }
+      h+='</div>';
+    }
+  }
+
+  // ═══════════════════ BUDGET ═══════════════════
+  if(view==="budget"){
+    var budMos=sMo==="all"?mos:(sMo.indexOf("ytd-")===0?mos.filter(function(m){return m.slice(0,4)===sMo.slice(4)}):mos.filter(function(m){return m===sMo}));
+    var numBudMo=budMos.length||1;
+
+    // ─── INCOME BUDGET ───
+    var budInc=fil.filter(function(t){return t.type==="Income"});
+    var budByIncCat={};budInc.forEach(function(t){budByIncCat[t.category]=(budByIncCat[t.category]||0)+t.amount});
+    var incCats=Object.entries(budByIncCat).sort(function(a,b){return b[1]-a[1]});
+    var totalIncActual=0,totalIncBudget=0,totalIncBudgetSet=0;
+
+    h+='<div class="c" style="margin-bottom:16px"><div class="ct" style="color:#4ade80">Income Budget</div>';
+    h+='<p style="font-size:11px;color:#4a5568;margin-bottom:14px">Monthly income targets vs actuals ('+numBudMo+' month'+(numBudMo>1?"s":"")+')</p>';
+    h+='<table style="width:100%;font-size:12px"><thead><tr><th>Source</th><th class="r">Monthly Avg</th><th class="r">Budget</th><th style="width:35%">Progress</th><th class="r">Diff</th></tr></thead><tbody>';
+    incCats.forEach(function(bc){
+      var cat2=bc[0],actual=bc[1],moAvg=actual/numBudMo;
+      var bKey="inc:"+cat2;
+      var bgt=BUDGETS[bKey]||0;
+      totalIncActual+=moAvg;
+      if(bgt>0){totalIncBudgetSet++;totalIncBudget+=bgt}
+      var pct=bgt>0?Math.min((moAvg/bgt)*100,200):0;
+      var diff=bgt>0?moAvg-bgt:0;
+      var barCol=bgt===0?"#4ade8055":(pct>=100?"#4ade80":pct>=80?"#fbbf24":"#f87171");
+      var diffCol=diff>=0?"#4ade80":"#f87171";
+      h+='<tr>';
+      h+='<td style="color:#eef1f6;font-weight:500"><span class="tg" style="background:#4ade8022;color:#4ade80">'+cat2+'</span></td>';
+      h+='<td class="r m" style="color:#b8c0cc">'+fm(moAvg)+'</td>';
+      h+='<td class="r"><input type="number" value="'+(bgt||"")+'" placeholder="-" onchange="setBudget(\'inc:'+cat2.replace(/'/g,"\\'")+'\',(this.value))" style="width:80px;padding:3px 6px;border-radius:4px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:11px;font-family:\'JetBrains Mono\',monospace;text-align:right"></td>';
+      h+='<td><div style="display:flex;align-items:center;gap:6px">';
+      if(bgt>0){h+='<div class="bt" style="flex:1"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+barCol+'"></div></div><span style="font-size:10px;color:#4a5568;width:35px;text-align:right">'+pct.toFixed(0)+'%</span>'}
+      else{h+='<div class="bt" style="flex:1"><div class="bf" style="width:'+(moAvg>0?50:0)+'%;background:#4ade8033"></div></div><span style="font-size:10px;color:#3d4a5c;width:35px;text-align:right">-</span>'}
+      h+='</div></td>';
+      h+='<td class="r m" style="font-size:11px;color:'+(bgt>0?diffCol:'#3d4a5c')+'">'+(bgt>0?(diff>=0?"+":"")+fm(diff):"-")+'</td>';
+      h+='</tr>';
+    });
+    h+='</tbody></table>';
+    if(totalIncBudgetSet>0){
+      var incDiff=totalIncActual-totalIncBudget;
+      h+='<div style="display:flex;justify-content:flex-end;gap:16px;padding:8px 0 4px;border-top:1px solid #1a2236;margin-top:6px;font-size:12px">';
+      h+='<span style="color:#94a3b8">Target: <span class="m">'+fm(totalIncBudget)+'</span>/mo</span>';
+      h+='<span style="color:#94a3b8">Actual: <span class="m">'+fm(totalIncActual)+'</span>/mo</span>';
+      h+='<span style="color:'+(incDiff>=0?"#4ade80":"#f87171")+'">Diff: <span class="m">'+(incDiff>=0?"+":"")+fm(incDiff)+'</span>/mo</span>';
+      h+='</div>';
+    }
+    h+='</div>';
+
+    // ─── EXPENSE BUDGET ───
+    var budExp=fil.filter(function(t){return t.type==="Expense"});
+    var budByCat={};budExp.forEach(function(t){budByCat[t.category]=(budByCat[t.category]||0)+t.amount});
+    var budCats=Object.entries(budByCat).sort(function(a,b){return b[1]-a[1]});
+    var totalBudgetSet=0,totalActual=0,totalBudget=0;
+
+    h+='<div class="c" style="margin-bottom:16px"><div class="ct" style="color:#f87171">Expense Budget</div>';
+    h+='<p style="font-size:11px;color:#4a5568;margin-bottom:14px">Monthly spending limits vs actuals ('+numBudMo+' month'+(numBudMo>1?"s":"")+')</p>';
+    h+='<table style="width:100%;font-size:12px"><thead><tr><th>Category</th><th class="r">Monthly Avg</th><th class="r">Budget</th><th style="width:35%">Progress</th><th class="r">Diff</th></tr></thead><tbody>';
+    budCats.forEach(function(bc){
+      var cat2=bc[0],actual=bc[1],moAvg=actual/numBudMo;
+      var bgt=BUDGETS[cat2]||0;
+      totalActual+=moAvg;
+      if(bgt>0){totalBudgetSet++;totalBudget+=bgt}
+      var pct=bgt>0?Math.min((moAvg/bgt)*100,200):0;
+      var diff=bgt>0?bgt-moAvg:0;
+      var barCol=bgt===0?"#38bdf8":(pct<=80?"#4ade80":pct<=100?"#fbbf24":"#f87171");
+      var diffCol=diff>=0?"#4ade80":"#f87171";
+      h+='<tr>';
+      h+='<td style="color:#eef1f6;font-weight:500"><span class="tg" style="background:'+(CC[cat2]||"#7f8c8d")+'22;color:'+(CC[cat2]||"#7f8c8d")+'">'+cat2+'</span></td>';
+      h+='<td class="r m" style="color:#b8c0cc">'+fm(moAvg)+'</td>';
+      h+='<td class="r"><input type="number" value="'+(bgt||"")+'" placeholder="-" onchange="setBudget(\''+cat2.replace(/'/g,"\\'")+'\',(this.value))" style="width:80px;padding:3px 6px;border-radius:4px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:11px;font-family:\'JetBrains Mono\',monospace;text-align:right"></td>';
+      h+='<td><div style="display:flex;align-items:center;gap:6px">';
+      if(bgt>0){h+='<div class="bt" style="flex:1"><div class="bf" style="width:'+Math.min(pct,100)+'%;background:'+barCol+'"></div></div><span style="font-size:10px;color:#4a5568;width:35px;text-align:right">'+pct.toFixed(0)+'%</span>'}
+      else{h+='<div class="bt" style="flex:1"><div class="bf" style="width:'+(moAvg>0?50:0)+'%;background:#38bdf833"></div></div><span style="font-size:10px;color:#3d4a5c;width:35px;text-align:right">-</span>'}
+      h+='</div></td>';
+      h+='<td class="r m" style="font-size:11px;color:'+(bgt>0?diffCol:'#3d4a5c')+'">'+(bgt>0?(diff>=0?"+":"")+fm(diff):"-")+'</td>';
+      h+='</tr>';
+    });
+    h+='</tbody></table>';
+    if(totalBudgetSet>0){
+      var totalDiff=totalBudget-totalActual;
+      h+='<div style="display:flex;justify-content:flex-end;gap:16px;padding:8px 0 4px;border-top:1px solid #1a2236;margin-top:6px;font-size:12px">';
+      h+='<span style="color:#94a3b8">Limit: <span class="m">'+fm(totalBudget)+'</span>/mo</span>';
+      h+='<span style="color:#94a3b8">Actual: <span class="m">'+fm(totalActual)+'</span>/mo</span>';
+      h+='<span style="color:'+(totalDiff>=0?"#4ade80":"#f87171")+'">Diff: <span class="m">'+(totalDiff>=0?"+":"")+fm(totalDiff)+'</span>/mo</span>';
+      h+='</div>';
+    }
+    h+='</div>';
+
+    // ─── MONTHLY BUDGET DETAIL ───
+    var curYr2=new Date().getFullYear();
+    var curMo2=new Date().getMonth()+1;
+    var futureMos=[];
+    for(var fmi2=curMo2+1;fmi2<=12;fmi2++){
+      futureMos.push(curYr2+"-"+(fmi2<10?"0":"")+fmi2);
+    }
+    if(futureMos.length>0){
+      var moLabels={"01":"Jan","02":"Feb","03":"Mar","04":"Apr","05":"May","06":"Jun","07":"Jul","08":"Aug","09":"Sep","10":"Oct","11":"Nov","12":"Dec"};
+      // Combine inc and exp categories that have budgets
+      var allBudCats=[];
+      incCats.forEach(function(ic){allBudCats.push({cat:ic[0],key:"inc:"+ic[0],type:"inc"})});
+      budCats.forEach(function(ec){allBudCats.push({cat:ec[0],key:ec[0],type:"exp"})});
+
+      if(allBudCats.length>0){
+        h+='<div class="c" style="margin-bottom:16px"><div class="ct">Monthly Budget Overrides <span style="font-size:11px;color:#4a5568;font-weight:400">('+curYr2+')</span></div>';
+        h+='<p style="font-size:11px;color:#4a5568;margin-bottom:10px">Override individual line items per month. Placeholders show the default monthly budget. Leave blank to use the default.</p>';
+        h+='<div class="tw"><table style="font-size:11px"><thead><tr><th style="min-width:120px">Category</th><th class="r" style="min-width:60px">Default</th>';
+        futureMos.forEach(function(fm2){h+='<th class="r" style="min-width:70px">'+moLabels[fm2.slice(5)]+'</th>'});
+        h+='</tr></thead><tbody>';
+
+        allBudCats.forEach(function(bc){
+          var defVal=BUDGETS[bc.key]||0;
+          var isInc=bc.type==="inc";
+          var col=isInc?"#4ade80":"#f87171";
+          h+='<tr><td><span class="tg" style="background:'+col+'15;color:'+col+'">'+(isInc?"\u2191 ":"\u2193 ")+bc.cat+'</span></td>';
+          h+='<td class="r m" style="color:#4a5568">'+fm(defVal)+'</td>';
+          futureMos.forEach(function(fm2){
+            var ov=(MBUD[fm2]&&MBUD[fm2][bc.key]!==undefined)?MBUD[fm2][bc.key]:"";
+            h+='<td class="r"><input type="number" value="'+ov+'" placeholder="'+defVal.toFixed(0)+'" onchange="setMbud(\''+fm2+'\',\''+bc.key.replace(/'/g,"\\'")+'\',this.value)" style="width:65px;padding:2px 4px;border-radius:3px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:10px;font-family:\'JetBrains Mono\',monospace;text-align:right"></td>';
+          });
+          h+='</tr>';
+        });
+
+        // Total row per month
+        h+='<tr style="border-top:2px solid #1a2236"><td style="color:#eef1f6;font-weight:600">Net (Inc - Exp)</td><td></td>';
+        futureMos.forEach(function(fm2){
+          var mInc3=0,mExp3=0;
+          allBudCats.forEach(function(bc){
+            var v=(MBUD[fm2]&&MBUD[fm2][bc.key]!==undefined)?MBUD[fm2][bc.key]:(BUDGETS[bc.key]||0);
+            if(bc.type==="inc")mInc3+=v;else mExp3+=v;
+          });
+          var mNet3=mInc3-mExp3;
+          h+='<td class="r m" style="color:'+(mNet3>=0?"#4ade80":"#f87171")+'">'+fm(mNet3)+'</td>';
+        });
+        h+='</tr>';
+
+        h+='</tbody></table></div></div>';
+      }
+    }
+
+    // ─── YEAR-END FORECAST ───
+    var now=new Date();
+    var curYear=now.getFullYear();
+    var curMonth=now.getMonth()+1;
+    var mosElapsed=curMonth;
+    var mosRemaining=12-curMonth;
+    var ytdTxns=T.filter(function(t){return t.date.slice(0,4)===String(curYear)});
+    var ytdI=ytdTxns.filter(function(t){return t.type==="Income"}).reduce(function(s,t){return s+t.amount},0);
+    var ytdE=ytdTxns.filter(function(t){return t.type==="Expense"}).reduce(function(s,t){return s+t.amount},0);
+    var ytdInv=ytdTxns.filter(function(t){return t.type==="Investment"}).reduce(function(s,t){return s+t.amount},0);
+    var moAvgI=ytdI/mosElapsed,moAvgE=ytdE/mosElapsed,moAvgInv=ytdInv/mosElapsed;
+
+    // Budget-based forecast if budgets set
+    var hasBudgetInc=false,hasBudgetExp=false;
+    var budgetMonthlyInc=0,budgetMonthlyExp=0;
+    for(var bk in BUDGETS){if(bk.indexOf("inc:")===0&&BUDGETS[bk]>0){hasBudgetInc=true;budgetMonthlyInc+=BUDGETS[bk]}
+    else if(BUDGETS[bk]>0){hasBudgetExp=true;budgetMonthlyExp+=BUDGETS[bk]}}
+
+    // Sum future months using overrides where set
+    var fcRemI=0,fcRemE=0,fcRemInv=0;
+    for(var fmi=mosElapsed+1;fmi<=12;fmi++){
+      var fmKey=curYear+"-"+(fmi<10?"0":"")+fmi;
+      var fmo=FCST[fmKey]||{};
+      var fmbm=MBUD[fmKey];
+      var fDefI=hasBudgetInc?budgetMonthlyInc:moAvgI;
+      var fDefE=hasBudgetExp?budgetMonthlyExp:moAvgE;
+      if(fmbm&&Object.keys(fmbm).length>0){
+        var fmbI=0,fmbE=0,fmbIH=false,fmbEH=false;
+        for(var fmbk in fmbm){if(fmbk.indexOf("inc:")===0){fmbI+=fmbm[fmbk];fmbIH=true}else{fmbE+=fmbm[fmbk];fmbEH=true}}
+        if(fmbIH){for(var fbik in BUDGETS){if(fbik.indexOf("inc:")===0&&(!fmbm||fmbm[fbik]===undefined))fmbI+=BUDGETS[fbik]}fDefI=fmbI}
+        if(fmbEH){for(var fbek in BUDGETS){if(fbek.indexOf("inc:")!==0&&(!fmbm||fmbm[fbek]===undefined))fmbE+=BUDGETS[fbek]}fDefE=fmbE}
+      }
+      fcRemI+=(fmo.i!==undefined?fmo.i:fDefI);
+      fcRemE+=(fmo.e!==undefined?fmo.e:fDefE);
+      fcRemInv+=(fmo.v!==undefined?fmo.v:moAvgInv);
+    }
+    var fcI=ytdI+fcRemI;
+    var fcE=ytdE+fcRemE;
+    var fcInv=ytdInv+fcRemInv;
+    var fcNet=fcI-fcE-fcInv;
+    var fcMethod=hasBudgetInc||hasBudgetExp?"budget targets":"run-rate avg";
+
+    h+='<div class="c"><div class="ct">\ud83d\udcc8 '+curYear+' Year-End Forecast</div>';
+    h+='<p style="font-size:11px;color:#4a5568;margin-bottom:14px">Based on '+mosElapsed+' months of data. Remaining '+mosRemaining+' months projected using '+(hasBudgetInc||hasBudgetExp?'budget targets where set, run-rate averages elsewhere':'monthly run-rate averages')+'.</p>';
+
+    h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">';
+    h+=kpi("Forecast Income",fm(fcI),"#4ade80",fm(moAvgI)+"/mo avg");
+    h+=kpi("Forecast Expenses",fm(fcE),"#f87171",fm(moAvgE)+"/mo avg");
+    h+=kpi("Forecast Invested",fm(fcInv),"#a78bfa",fm(moAvgInv)+"/mo avg");
+    h+=kpi("Forecast Net",fm(fcNet),fcNet>=0?"#4ade80":"#f87171",(fcI>0?((fcNet/fcI)*100).toFixed(1):"0")+"% retained");
+    h+='</div>';
+
+    // Monthly forecast table — editable for future months
+    var inpS='style="width:80px;padding:3px 6px;border-radius:4px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:11px;font-family:\'JetBrains Mono\',monospace;text-align:right"';
+    h+='<table style="width:100%;font-size:12px"><thead><tr><th>Month</th><th class="r">Income</th><th class="r">Expenses</th><th class="r">Invested</th><th class="r">Net</th><th>Status</th></tr></thead><tbody>';
+    var runI=0,runE=0,runInv=0;
+    for(var mi=1;mi<=12;mi++){
+      var mKey=curYear+"-"+(mi<10?"0":"")+mi;
+      var mLabel=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][mi-1];
+      var isActual=mi<=mosElapsed;
+      var mTxns=ytdTxns.filter(function(t){return t.date.slice(0,7)===mKey});
+      var fo=FCST[mKey]||{};
+      var defI=hasBudgetInc?budgetMonthlyInc:moAvgI;
+      var defE=hasBudgetExp?budgetMonthlyExp:moAvgE;
+      var defInv=moAvgInv;
+      // Check for monthly budget overrides (MBUD) — sum category-level if any set for this month
+      var mbm=MBUD[mKey];
+      if(!isActual&&mbm&&Object.keys(mbm).length>0){
+        var mbI=0,mbE=0,mbIHas=false,mbEHas=false;
+        for(var mbk in mbm){
+          if(mbk.indexOf("inc:")===0){mbI+=mbm[mbk];mbIHas=true}
+          else{mbE+=mbm[mbk];mbEHas=true}
+        }
+        // Fill in non-overridden categories with defaults
+        if(mbIHas){for(var bik in BUDGETS){if(bik.indexOf("inc:")===0&&(!mbm||mbm[bik]===undefined))mbI+=BUDGETS[bik]}}
+        if(mbEHas){for(var bek in BUDGETS){if(bek.indexOf("inc:")!==0&&(!mbm||mbm[bek]===undefined))mbE+=BUDGETS[bek]}}
+        if(mbIHas)defI=mbI;
+        if(mbEHas)defE=mbE;
+      }
+      var mI=isActual?mTxns.filter(function(t){return t.type==="Income"}).reduce(function(s,t){return s+t.amount},0):(fo.i!==undefined?fo.i:defI);
+      var mE=isActual?mTxns.filter(function(t){return t.type==="Expense"}).reduce(function(s,t){return s+t.amount},0):(fo.e!==undefined?fo.e:defE);
+      var mInv2=isActual?mTxns.filter(function(t){return t.type==="Investment"}).reduce(function(s,t){return s+t.amount},0):(fo.v!==undefined?fo.v:defInv);
+      var mNet=mI-mE-mInv2;
+      runI+=mI;runE+=mE;runInv+=mInv2;
+      var rowBg=isActual?"":"background:#0a101e;";
+      var tag=isActual?'<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:#4ade8022;color:#4ade80">Actual</span>':((fo.i!==undefined||fo.e!==undefined||fo.v!==undefined)?'<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:#38bdf822;color:#38bdf8">Custom</span>':'<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:#fbbf2422;color:#fbbf24">Avg</span>');
+      h+='<tr style="'+rowBg+'">';
+      h+='<td style="color:#eef1f6;font-weight:500">'+mLabel+'</td>';
+      if(isActual){
+        h+='<td class="r m" style="color:#4ade80">'+fm(mI)+'</td>';
+        h+='<td class="r m" style="color:#f87171">'+fm(mE)+'</td>';
+        h+='<td class="r m" style="color:#a78bfa">'+fm(mInv2)+'</td>';
+      }else{
+        h+='<td class="r"><input type="number" value="'+(fo.i!==undefined?fo.i:"")+'" placeholder="'+defI.toFixed(0)+'" onchange="setFcst(\''+mKey+'\',\'i\',this.value)" '+inpS+'></td>';
+        h+='<td class="r"><input type="number" value="'+(fo.e!==undefined?fo.e:"")+'" placeholder="'+defE.toFixed(0)+'" onchange="setFcst(\''+mKey+'\',\'e\',this.value)" '+inpS+'></td>';
+        h+='<td class="r"><input type="number" value="'+(fo.v!==undefined?fo.v:"")+'" placeholder="'+defInv.toFixed(0)+'" onchange="setFcst(\''+mKey+'\',\'v\',this.value)" '+inpS+'></td>';
+      }
+      h+='<td class="r m" style="color:'+(mNet>=0?"#4ade80":"#f87171")+'">'+(mNet>=0?"+":"")+fm(mNet)+'</td>';
+      h+='<td>'+tag+'</td></tr>';
+    }
+    var runNet=runI-runE-runInv;
+    h+='<tr style="border-top:2px solid #1a2236"><td style="color:#eef1f6;font-weight:700">Full Year</td>';
+    h+='<td class="r m" style="color:#4ade80;font-weight:700">'+fm(runI)+'</td>';
+    h+='<td class="r m" style="color:#f87171;font-weight:700">'+fm(runE)+'</td>';
+    h+='<td class="r m" style="color:#a78bfa;font-weight:700">'+fm(runInv)+'</td>';
+    h+='<td class="r m" style="color:'+(runNet>=0?"#4ade80":"#f87171")+';font-weight:700">'+(runNet>=0?"+":"")+fm(runNet)+'</td>';
+    h+='<td></td></tr>';
+    h+='</tbody></table>';
+    h+='<p style="font-size:10px;color:#3d4a5c;margin-top:8px">Placeholders show run-rate avg or budget targets. Type a value to override any future month. Clear to revert to default.</p>';
+    h+='</div>';
+  }
+
+  // ═══════════════════ TRANSACTIONS ═══════════════════
+  if(view==="transactions"){
+    h+='<div class="fl">';
+    h+='<select onchange="setSrc(this.value)"><option value="all">All Accounts</option>';
+    var srcs={};T.forEach(function(t){srcs[t.source]=true});
+    Object.keys(srcs).sort().forEach(function(s){h+='<option value="'+s+'"'+(sSrc===s?" selected":"")+'>'+s+'</option>'});
+    h+='</select>';
+    h+='<select onchange="setTyp(this.value)"><option value="all">All Types</option>';
+    h+='<option value="Expense"'+(sTyp==="Expense"?" selected":"")+'>Expenses</option>';
+    h+='<option value="Income"'+(sTyp==="Income"?" selected":"")+'>Income</option>';
+    h+='<option value="Investment"'+(sTyp==="Investment"?" selected":"")+'>Investments</option></select>';
+    var cats2={};T.forEach(function(t){cats2[t.category]=true});
+    h+='<select onchange="setCat(this.value)"><option value="all">All Categories</option>';
+    Object.keys(cats2).sort().forEach(function(c){h+='<option value="'+c+'"'+(sCat===c?" selected":"")+'>'+c+'</option>'});
+    h+='</select>';
+    h+='<input type="text" id="txn-search" placeholder="Search description\u2026" value="'+sQ.replace(/"/g,'&quot;')+'" oninput="sQ=this.value;renderKeepFocus()" style="padding:6px 12px;border-radius:6px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:12px;font-family:inherit;min-width:150px">';
+    h+='<div style="font-size:11px;color:#4a5568;margin-left:auto">'+fil.length+' transactions</div></div>';
+
+    h+='<div class="c" style="padding:0"><div class="tw"><table>';
+    h+='<thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Account</th><th class="r">Amount</th><th style="width:30px"></th></tr></thead><tbody>';
+    fil.forEach(function(t){
+      var idx=T.indexOf(t),col=CC[t.category]||"#7f8c8d";
+      var sc=t.source.includes("Amex")?"#60a5fa":t.source==="BMO Chequing"?"#38bdf8":"#fbbf24";
+      var sb=t.source.includes("Amex")?"#60a5fa11":t.source==="BMO Chequing"?"#38bdf811":"#fbbf2411";
+      var ac=t.type==="Income"?"#4ade80":t.type==="Investment"?"#a78bfa":"#f87171";
+      var sg=t.type==="Income"?"+":t.type==="Investment"?"\u2192":"-";
+      h+='<tr>';
+      h+='<td class="m" style="font-size:10px;color:#8896ab;white-space:nowrap">'+t.date+'</td>';
+      h+='<td style="color:#eef1f6;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.description+'</td>';
+      h+='<td>';
+      if(eIdx===idx){
+        h+='<select class="cs" onchange="updCat('+idx+',this.value)" onblur="setTimeout(function(){eIdx=null;render()},200)">';
+        ALLC.forEach(function(c){h+='<option value="'+c+'"'+(t.category===c?" selected":"")+'>'+c+'</option>'});
+        h+='<option value="__new__">+ New Category</option>';
+        h+='</select>';
+      }else{
+        h+='<span class="tg" style="background:'+col+'22;color:'+col+'" onclick="startE('+idx+')">'+t.category+'</span>';
+      }
+      h+='</td>';
+      h+='<td><span class="ts2" style="background:'+sb+';color:'+sc+'">'+t.source+'</span></td>';
+      h+='<td class="r m" style="font-weight:600;color:'+ac+'">'+sg+fm(t.amount)+'</td>';
+      h+='<td style="text-align:center"><span style="cursor:pointer;color:#3d4a5c;font-size:14px" onclick="delTxn('+idx+')" title="Delete">&times;</span></td></tr>';
+    });
+    h+='</tbody></table></div></div>';
+  }
+
+  // ═══════════════════ INVESTMENTS ═══════════════════
+  if(view==="investments"){
+    var H=loadHoldings();
+    var fxr=H.fx_rate||1.3793;
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+    h+='<div style="font-size:11px;color:#4a5568">As of: '+H.as_of+' \u00b7 USD/CAD: '+fxr.toFixed(4)+' \u00b7 <span style="color:#4ade80">\u25cf Auto-refresh 1min</span> \u00b7 '+loadSnapshots().length+' snapshots</div>';
+    h+='<button class="b bp" style="font-size:11px;padding:5px 14px" onclick="fetchLivePrices()">'+(priceLoading?'\u23f3 Loading...':'\u21bb Refresh Live Prices')+'</button>';
+    h+='<button class="b bo" style="font-size:11px;padding:5px 8px;margin-left:4px" onclick="setFinnhubKey()" title="Set Finnhub API Key">\u2699</button>';
+    h+='<button class="b bo" style="font-size:11px;padding:5px 8px;margin-left:4px" onclick="resetHoldings()" title="Reset to original seed prices">\u21a9 Reset Prices</button>';
+    h+='<button class="b bo" style="font-size:11px;padding:5px 8px;margin-left:4px" onclick="if(confirm(\'Clear all chart snapshots? The chart will rebuild from new refreshes.\')){localStorage.removeItem(\'bp7-snap\');portfolioChart.data=null;render()}" title="Clear chart history">\u2715 Clear History</button>';
+    h+='</div>';
+    h+='<div class="c" style="margin-bottom:14px"><div class="ct">Investment Portfolio</div>';
+
+    var totalMV=0,totalBK=0;
+    var activeA=H.accounts.filter(function(a){return a.total_market>0});
+    activeA.forEach(function(a){var fx=a.currency==="USD"?fxr:1;totalMV+=a.total_market*fx;totalBK+=a.total_book*fx});
+    var totalGL=totalMV-totalBK;
+    var totalRet=totalBK>0?((totalGL/totalBK)*100).toFixed(1):"0";
+
+    var allS={};
+    activeA.forEach(function(a){a.holdings.forEach(function(h2){allS[h2.symbol]=1})});
+
+    h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">';
+    h+=kpi("Portfolio Value",fm(totalMV),"#a78bfa",activeA.length+" accounts");
+    h+=kpi("Book Cost",fm(totalBK),"#8896ab","total invested");
+    h+=kpi("Unrealized P&L",fm(totalGL),totalGL>=0?"#4ade80":"#f87171",totalRet+"% return");
+    h+=kpi("Holdings",Object.keys(allS).length+" positions","#38bdf8","equities & ETFs");
+    h+='</div>';
+
+    // ─── Portfolio Chart ───
+    // Auto-load chart data ONLY on first visit (not after timeframe change)
+    if(!portfolioChart.data&&!portfolioChart.loading&&loadSnapshots().length>=2&&!portfolioChart.loaded){
+      portfolioChart.loaded=true;
+      fetchPortfolioHistory(portfolioChart.range);
+    }
+    h+='<div class="c" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+    h+='<div class="ct" style="margin:0">Portfolio Value <span style="font-size:10px;color:#4a5568;font-weight:400">('+loadSnapshots().length+' snapshots)</span></div>';
+    h+='<div style="display:flex;gap:4px">';
+    ["1D","1W","1M","YTD","1Y"].forEach(function(rng){
+      var isActive=portfolioChart.range===rng;
+      h+='<button class="b '+(isActive?"bp":"bo")+'" style="font-size:10px;padding:3px 10px" onclick="fetchPortfolioHistory(\''+rng+'\')">'+rng+'</button>';
+    });
+    h+='</div></div>';
+    if(portfolioChart.loading){
+      h+='<div style="text-align:center;padding:40px 0;color:#4a5568;font-size:12px">\u23f3 Loading chart data...</div>';
+    }else if(portfolioChart.data&&portfolioChart.data.length>1){
+      var pts=portfolioChart.data;
+      var minV=Infinity,maxV=-Infinity;
+      pts.forEach(function(p){if(p.v<minV)minV=p.v;if(p.v>maxV)maxV=p.v});
+      console.log("Chart raw: minV="+minV.toFixed(0)+", maxV="+maxV.toFixed(0)+", range="+(maxV-minV).toFixed(0)+", pts="+pts.length);
+      console.log("First 3 pts:",pts.slice(0,3).map(function(p){return "$"+p.v.toFixed(0)+" @"+new Date(p.t).toLocaleTimeString()}));
+      console.log("Last 3 pts:",pts.slice(-3).map(function(p){return "$"+p.v.toFixed(0)+" @"+new Date(p.t).toLocaleTimeString()}));
+      var mid=(minV+maxV)/2;
+      var rawRange=maxV-minV;
+      // Minimum visible range: $4K or 3% of portfolio, whichever is larger
+      var minRange=Math.max(4000,mid*0.03);
+      if(rawRange<minRange){var expand=(minRange-rawRange)/2;minV-=expand;maxV+=expand}
+      else{var dataPad=rawRange*0.15;minV-=dataPad;maxV+=dataPad}
+      minV=Math.floor(minV/1000)*1000;
+      maxV=Math.ceil(maxV/1000)*1000;
+      var chartW=680,chartH=200,padL=70,padR=10,padT=10,padB=30;
+      var drawW=chartW-padL-padR,drawH=chartH-padT-padB;
+      var range2=maxV-minV||1;
+      var startV=pts[0].v,endV=pts[pts.length-1].v;
+      var chg=endV-startV;var chgPct=startV>0?((chg/startV)*100).toFixed(2):"0";
+      var lineCol=chg>=0?"#4ade80":"#f87171";
+      var pathD="";
+      var ptCoords=[];
+      // Check if we have SPY data for overlay
+      var hasSpy=pts.filter(function(p){return p.spy}).length>=2;
+      var spyStart=hasSpy?pts.find(function(p){return p.spy}).spy:0;
+      pts.forEach(function(p,i){
+        var x=padL+(i/(pts.length-1))*drawW;
+        var y=padT+drawH-((p.v-minV)/range2)*drawH;
+        var coord={x:x,y:y,v:p.v,t:p.t};
+        // Normalize SPY to portfolio scale for overlay
+        if(hasSpy&&p.spy&&spyStart>0){
+          var spyNorm=startV*(p.spy/spyStart); // Scale SPY to portfolio starting value
+          var spyY=padT+drawH-((spyNorm-minV)/range2)*drawH;
+          coord.spy=p.spy;coord.spyY=spyY;coord.spyNorm=spyNorm;
+        }
+        ptCoords.push(coord);
+        pathD+=(i===0?"M":"L")+x.toFixed(1)+","+y.toFixed(1);
+      });
+      // Build SPY path
+      var spyPathD="";
+      if(hasSpy){
+        var firstSpy=true;
+        ptCoords.forEach(function(c){
+          if(c.spyY!==undefined){
+            spyPathD+=(firstSpy?"M":"L")+c.x.toFixed(1)+","+c.spyY.toFixed(1);
+            firstSpy=false;
+          }
+        });
+      }
+      var lastX=padL+drawW;
+      var fillD=pathD+"L"+lastX+","+(padT+drawH)+"L"+padL+","+(padT+drawH)+"Z";
+      window._pcCoords=ptCoords;window._pcStartV=startV;window._pcLineCol=lineCol;window._pcHasSpy=hasSpy;window._pcSpyStart=spyStart;
+      // Header with SPY comparison
+      var spyChgStr="";
+      if(hasSpy){
+        var lastSpy=null;for(var si2=pts.length-1;si2>=0;si2--){if(pts[si2].spy){lastSpy=pts[si2].spy;break}}
+        if(lastSpy&&spyStart>0){
+          var spyChg=((lastSpy/spyStart-1)*100).toFixed(2);
+          var portChgPct=startV>0?((endV/startV-1)*100).toFixed(2):"0";
+          spyChgStr=' <span style="font-size:11px;color:#8896ab">\u00b7 S&P 500: <span style="color:'+(spyChg>=0?"#fbbf24":"#f87171")+'">'+(spyChg>=0?"+":"")+spyChg+'%</span></span>';
+        }
+      }
+      h+='<div style="text-align:center;margin-bottom:8px" id="pc-header"><span class="m" style="font-size:18px;color:'+lineCol+'">'+fm(endV)+'</span> <span style="font-size:12px;color:'+lineCol+'">'+(chg>=0?"+":"")+fm(chg)+' ('+chgPct+'%)</span>'+spyChgStr+'</div>';
+      h+='<div style="position:relative">';
+      h+='<svg id="pc-svg" viewBox="0 0 '+chartW+' '+chartH+'" style="width:100%;height:auto;max-height:220px">';
+      for(var gi=0;gi<=4;gi++){
+        var gy=padT+(gi/4)*drawH;
+        var gv=maxV-((gi/4)*range2);
+        h+='<line x1="'+padL+'" y1="'+gy+'" x2="'+(padL+drawW)+'" y2="'+gy+'" stroke="#1a2236" stroke-width="0.5"/>';
+        h+='<text x="'+(padL-6)+'" y="'+(gy+3)+'" fill="#4a5568" font-size="8" text-anchor="end" font-family="JetBrains Mono,monospace">$'+(gv/1000).toFixed(1)+'k</text>';
+      }
+      var labelCount=Math.min(pts.length,6);
+      for(var li=0;li<labelCount;li++){
+        var lIdx=Math.floor(li*(pts.length-1)/(labelCount-1));
+        var lx=padL+(lIdx/(pts.length-1))*drawW;
+        var ld=new Date(pts[lIdx].t);
+        var lbl=portfolioChart.range==="1D"?ld.getHours()+":"+String(ld.getMinutes()).padStart(2,"0"):(ld.getMonth()+1)+"/"+ld.getDate();
+        h+='<text x="'+lx+'" y="'+(chartH-5)+'" fill="#4a5568" font-size="8" text-anchor="middle" font-family="JetBrains Mono,monospace">'+lbl+'</text>';
+      }
+      h+='<defs><linearGradient id="cfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+lineCol+'" stop-opacity="0.15"/><stop offset="100%" stop-color="'+lineCol+'" stop-opacity="0"/></linearGradient></defs>';
+      h+='<path d="'+fillD+'" fill="url(#cfill)"/>';
+      // SPY overlay line (behind portfolio line)
+      if(hasSpy&&spyPathD){h+='<path d="'+spyPathD+'" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>';}
+      h+='<path d="'+pathD+'" fill="none" stroke="'+lineCol+'" stroke-width="1.5"/>';
+      // First and last point labels
+      var fp=ptCoords[0],lp=ptCoords[ptCoords.length-1];
+      console.log("Chart render: fp.v="+fp.v.toFixed(2)+" fp.y="+fp.y.toFixed(1)+", lp.v="+lp.v.toFixed(2)+" lp.y="+lp.y.toFixed(1)+", minV="+minV+", maxV="+maxV+", range2="+range2);
+      h+='<circle cx="'+fp.x+'" cy="'+fp.y+'" r="2.5" fill="'+lineCol+'"/>';
+      h+='<circle cx="'+lp.x+'" cy="'+lp.y+'" r="2.5" fill="'+lineCol+'"/>';
+      h+='<text x="'+(fp.x+5)+'" y="'+(fp.y-6)+'" fill="#8896ab" font-size="7" font-family="JetBrains Mono,monospace">$'+fp.v.toFixed(0)+'</text>';
+      h+='<text x="'+(lp.x-5)+'" y="'+(lp.y-6)+'" fill="#eef1f6" font-size="7" text-anchor="end" font-family="JetBrains Mono,monospace">$'+lp.v.toFixed(0)+'</text>';
+      // Legend
+      if(hasSpy){
+        h+='<circle cx="'+(padL+10)+'" cy="'+(padT+8)+'" r="3" fill="'+lineCol+'"/>';
+        h+='<text x="'+(padL+16)+'" y="'+(padT+11)+'" fill="#8896ab" font-size="7" font-family="JetBrains Mono,monospace">Portfolio</text>';
+        h+='<line x1="'+(padL+65)+'" y1="'+(padT+8)+'" x2="'+(padL+78)+'" y2="'+(padT+8)+'" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3,2" opacity="0.6"/>';
+        h+='<text x="'+(padL+82)+'" y="'+(padT+11)+'" fill="#8896ab" font-size="7" font-family="JetBrains Mono,monospace">S&amp;P 500</text>';
+      }
+      h+='<line id="pc-vline" x1="0" y1="'+padT+'" x2="0" y2="'+(padT+drawH)+'" stroke="#8896ab" stroke-width="0.5" stroke-dasharray="3,3" visibility="hidden"/>';
+      h+='<circle id="pc-dot" r="3.5" fill="'+lineCol+'" stroke="#0b1120" stroke-width="1.5" visibility="hidden"/>';
+      h+='<circle id="pc-dot-spy" r="3" fill="#fbbf24" stroke="#0b1120" stroke-width="1" visibility="hidden"/>';
+      h+='<rect x="0" y="0" width="'+chartW+'" height="'+chartH+'" fill="transparent" style="cursor:crosshair" onmousemove="pcHover(evt)" onmouseleave="pcLeave()"/>';
+      h+='</svg>';
+      h+='<div id="pc-tip" style="display:none;position:absolute;top:6px;background:#0c152eee;border:1px solid #1a2236;border-radius:6px;padding:6px 10px;pointer-events:none;white-space:nowrap;z-index:10"><div id="pc-tip-val" style="font-family:\'JetBrains Mono\',monospace;font-size:13px;font-weight:600;color:#eef1f6"></div><div id="pc-tip-date" style="font-size:10px;color:#8896ab;margin-top:2px"></div><div id="pc-tip-chg" style="font-size:10px;margin-top:1px"></div><div id="pc-tip-spy" style="font-size:10px;margin-top:1px"></div></div>';
+      h+='</div>';
+    }else{
+      h+='<div style="text-align:center;padding:30px 0;color:#3d4a5c;font-size:12px">Click a timeframe to view portfolio history. Chart builds from your Refresh snapshots over time.</div>';
+    }
+    h+='</div>';
+
+    // ─── Daily Movers (what's driving today's change) ───
+    var movers=[];
+    var hasPrevClose=Object.keys(livePrevClose).length>0;
+    if(hasPrevClose){
+      H.accounts.forEach(function(a){
+        var fx=a.currency==="USD"?fxr:1;
+        a.holdings.forEach(function(p){
+          if(!livePrevClose[p.symbol])return;
+          var pc=livePrevClose[p.symbol];
+          var cur=livePrices[p.symbol]||p.price;
+          var dayChg=(cur-pc)*p.qty*fx;
+          var dayPct=pc>0?((cur-pc)/pc*100):0;
+          var existing=movers.find(function(m){return m.sym===p.symbol});
+          if(existing){existing.dayChg+=dayChg;existing.qty+=p.qty}
+          else{movers.push({sym:p.symbol,name:p.name||p.symbol,dayChg:dayChg,dayPct:dayPct,qty:p.qty,price:cur,pc:pc})}
+        });
+      });
+      movers.sort(function(a,b){return b.dayChg-a.dayChg});
+      // Show top 3 gainers and top 3 losers
+      var gainers=movers.filter(function(m){return m.dayChg>0}).slice(0,3);
+      var losers=movers.filter(function(m){return m.dayChg<0}).slice(-3).reverse();
+      var topMovers=gainers.concat(losers);
+      if(topMovers.length>0){
+        h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
+        topMovers.forEach(function(m){
+          var isUp=m.dayChg>=0;
+          var col=isUp?"#4ade80":"#f87171";
+          var arrow=isUp?"\u25B2":"\u25BC";
+          h+='<div style="flex:1;min-width:95px;background:#0c152e;border:1px solid '+(isUp?"#4ade8022":"#f8717122")+';border-radius:8px;padding:8px 10px">';
+          h+='<div style="display:flex;justify-content:space-between;align-items:center">';
+          h+='<span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600;color:#eef1f6">'+m.sym+'</span>';
+          h+='<span style="font-size:10px;color:'+col+'">'+arrow+' '+Math.abs(m.dayPct).toFixed(1)+'%</span>';
+          h+='</div>';
+          h+='<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:'+col+';margin-top:4px">'+(isUp?"+":"")+fm(m.dayChg)+' CAD</div>';
+          h+='<div style="font-size:9px;color:#4a5568;margin-top:2px">$'+m.pc.toFixed(2)+' \u2192 $'+m.price.toFixed(2)+'</div>';
+          h+='</div>';
+        });
+        h+='</div>';
+      }
+    }else{
+      h+='<div style="font-size:11px;color:#3d4a5c;margin-bottom:14px;text-align:center">Daily movers will appear after your first price refresh</div>';
+    }
+
+    // Account table
+    h+='<div class="tw" style="margin-bottom:14px"><table>';
+    h+='<thead><tr><th>Account</th><th>Type</th><th>CCY</th><th class="r">Market Value</th><th class="r">Book Cost</th><th class="r">P&L</th><th class="r">Return</th><th class="r">Weight</th></tr></thead><tbody>';
+    activeA.forEach(function(a){
+      var fx=a.currency==="USD"?fxr:1;var mv=a.total_market*fx;var bk=a.total_book*fx;var gl=mv-bk;
+      var ret=bk>0?((gl/bk)*100).toFixed(1):"0";var pct=(mv/totalMV*100).toFixed(1);
+      h+='<tr><td style="color:#eef1f6;font-weight:500">'+a.name+'</td>';
+      h+='<td style="color:#8896ab">'+a.type+'</td><td style="color:#8896ab">'+a.currency+'</td>';
+      h+='<td class="r m" style="color:#eef1f6">'+fm(mv)+'</td>';
+      h+='<td class="r m" style="color:#8896ab">'+fm(bk)+'</td>';
+      h+='<td class="r m" style="color:'+(gl>=0?'#4ade80':'#f87171')+'">'+(gl>=0?'+':'')+fm(gl)+'</td>';
+      h+='<td class="r m" style="color:'+(gl>=0?'#4ade80':'#f87171')+'">'+ret+'%</td>';
+      h+='<td class="r" style="color:#8896ab">'+pct+'%</td></tr>';
+    });
+    h+='<tr style="border-top:1px solid #1a2236"><td colspan="3" style="color:#eef1f6;font-weight:700">Total (CAD)</td>';
+    h+='<td class="r m" style="color:#a78bfa;font-weight:700">'+fm(totalMV)+'</td>';
+    h+='<td class="r m" style="color:#8896ab;font-weight:700">'+fm(totalBK)+'</td>';
+    h+='<td class="r m" style="color:'+(totalGL>=0?'#4ade80':'#f87171')+';font-weight:700">'+(totalGL>=0?'+':'')+fm(totalGL)+'</td>';
+    h+='<td class="r m" style="color:'+(totalGL>=0?'#4ade80':'#f87171')+';font-weight:700">'+totalRet+'%</td>';
+    h+='<td class="r" style="color:#8896ab">100%</td></tr>';
+    h+='</tbody></table></div></div>';
+
+    // Per-account holdings
+    activeA.forEach(function(a){
+      if(!a.holdings.length)return;
+      var fx=a.currency==="USD"?fxr:1;
+      h+='<div class="c" style="margin-bottom:10px"><div class="ct">'+a.name+' <span style="font-size:10px;color:#4a5568;font-weight:400">'+a.account+' \u00b7 '+a.currency+'</span></div>';
+      h+='<table style="width:100%;font-size:11px"><thead><tr><th>Symbol</th><th>Name</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Market</th><th class="r">P&L</th><th class="r">Return</th><th class="r">Wt</th><th style="width:25px"></th></tr></thead><tbody>';
+      a.holdings.forEach(function(hd){
+        var gl2=hd.market-hd.book;var ret2=hd.book>0?((gl2/hd.book)*100).toFixed(1):"0";
+        var wt=(hd.market/a.total_market*100).toFixed(1);
+        h+='<tr><td class="m" style="color:#38bdf8;font-weight:600">'+hd.symbol+'</td>';
+        h+='<td style="color:#b8c0cc">'+hd.name+'</td>';
+        h+='<td class="r m" style="color:#8896ab">'+hd.qty+'</td>';
+        h+='<td class="r m" style="color:#8896ab">$'+hd.price.toFixed(2)+'</td>';
+        h+='<td class="r m" style="color:#eef1f6">$'+hd.market.toLocaleString("en-CA",{minimumFractionDigits:2})+'</td>';
+        h+='<td class="r m" style="color:'+(gl2>=0?'#4ade80':'#f87171')+'">'+(gl2>=0?'+':'-')+'$'+Math.abs(gl2).toFixed(2)+'</td>';
+        h+='<td class="r m" style="color:'+(gl2>=0?'#4ade80':'#f87171')+'">'+ret2+'%</td>';
+        h+='<td class="r" style="color:#8896ab">'+wt+'%</td>';
+        h+='<td style="text-align:center"><span style="cursor:pointer;color:#3d4a5c;font-size:13px" onclick="removeHolding('+H.accounts.indexOf(a)+',\''+hd.symbol+'\')" title="Remove">&times;</span></td></tr>';
+      });
+      if(a.cash>0){h+='<tr><td style="color:#8896ab">CASH</td><td></td><td></td><td></td><td class="r m" style="color:#eef1f6">$'+a.cash.toFixed(2)+'</td><td></td><td></td><td class="r" style="color:#8896ab">'+(a.cash/a.total_market*100).toFixed(1)+'%</td></tr>'}
+      h+='</tbody></table></div>';
+    });
+
+    // Add Position Form
+    h+='<div class="c" style="margin-top:14px"><div class="ct">\u2795 Add Position</div>';
+    h+='<p style="font-size:11px;color:#4a5568;margin-bottom:12px">Add a new stock or ETF to an account. If the symbol already exists, shares will be added to the existing position.</p>';
+    var inpSt='style="padding:5px 8px;border-radius:5px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:11px;font-family:inherit"';
+    var inpMono='style="padding:5px 8px;border-radius:5px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:11px;font-family:\'JetBrains Mono\',monospace;width:90px"';
+    h+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
+    h+='<select id="ah-acct" '+inpSt+'>';
+    H.accounts.forEach(function(a,ai){h+='<option value="'+ai+'">'+a.name+' ('+a.currency+')</option>'});
+    h+='</select>';
+    h+='<input id="ah-sym" type="text" placeholder="Symbol" '+inpSt+' style="width:80px;padding:5px 8px;border-radius:5px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:11px;font-family:\'JetBrains Mono\',monospace;text-transform:uppercase">';
+    h+='<input id="ah-name" type="text" placeholder="Name (optional)" '+inpSt+' style="width:140px;padding:5px 8px;border-radius:5px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:11px">';
+    h+='<input id="ah-qty" type="number" step="0.0001" placeholder="Shares" '+inpMono+'>';
+    h+='<input id="ah-price" type="number" step="0.01" placeholder="Price" '+inpMono+'>';
+    h+='<input id="ah-book" type="number" step="0.01" placeholder="Avg Cost" '+inpMono+'>';
+    h+='<button class="b bp" style="font-size:11px;padding:5px 12px" onclick="addHolding()">+ Add</button>';
+    h+='</div></div>';
+
+    // Manual Update Form
+    h+='<div class="c" style="margin-top:14px"><div class="ct">\u270f\ufe0f Update Account Values</div>';
+    h+='<p style="font-size:11px;color:#4a5568;margin-bottom:12px">Quick-update account totals and FX rate from your TD dashboard.</p>';
+    h+='<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">';
+    h+='<label style="font-size:11px;color:#8896ab">USD/CAD:</label>';
+    h+='<input id="hfx" type="number" step="0.0001" value="'+fxr+'" style="width:90px;padding:6px 8px;border-radius:6px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:12px;font-family:\'JetBrains Mono\',monospace">';
+    h+='<button class="b bp" onclick="updateFX()">Update Rate</button></div>';
+    activeA.forEach(function(a,ai){
+      h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap">';
+      h+='<span style="font-size:11px;color:#8896ab;width:200px">'+a.name+' ('+a.currency+')</span>';
+      h+='<label style="font-size:10px;color:#4a5568">Market:</label>';
+      h+='<input id="hmv'+ai+'" type="number" step="0.01" value="'+a.total_market.toFixed(2)+'" style="width:120px;padding:4px 8px;border-radius:4px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:11px;font-family:\'JetBrains Mono\',monospace">';
+      h+='</div>';
+    });
+    h+='<button class="b bp" style="margin-top:10px" onclick="updateHoldings()">Save Updates</button>';
+    h+='</div>';
+  }
+
+  // ═══════════════════ RULES ═══════════════════
+  if(view==="rules"){
+    var rules=loadRules();
+    h+='<div class="c"><div class="ct">Custom Category Rules <span style="font-size:11px;color:#4a5568;font-weight:400">('+rules.length+')</span></div>';
+    h+='<p style="font-size:11px;color:#8896ab;margin-bottom:14px">Recategorize a transaction and it auto-learns the merchant. Add rules manually below.</p>';
+    h+='<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">';
+    h+='<input id="rp" type="text" placeholder="Merchant keyword" style="flex:1;min-width:180px;padding:8px 12px;border-radius:6px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:12px;font-family:inherit">';
+    h+='<input id="rc" list="rcl" placeholder="Category" style="width:170px;padding:8px 12px;border-radius:6px;background:#151d30;color:#b8c0cc;border:1px solid #1a2236;font-size:12px;font-family:inherit">';
+    h+='<datalist id="rcl">';ALLC.forEach(function(c){h+='<option value="'+c+'">'});h+='</datalist>';
+    h+='<button class="b bp" onclick="addManualRule()">Add Rule</button></div>';
+    if(rules.length===0){h+='<div style="color:#3d4a5c;font-size:13px;padding:16px 0;text-align:center">No custom rules yet.</div>'}
+    else{
+      h+='<div class="tw"><table><thead><tr><th>Pattern</th><th>Category</th><th style="width:70px">Action</th></tr></thead><tbody>';
+      rules.forEach(function(r,i){var col=CC[r.category]||"#7f8c8d";h+='<tr><td class="m" style="font-size:10px;color:#eef1f6">'+r.pattern+'</td><td><span class="tg" style="background:'+col+'22;color:'+col+'">'+r.category+'</span></td><td><button class="b bd" style="padding:3px 8px;font-size:10px" onclick="delRule('+i+')">Delete</button></td></tr>'});
+      h+='</tbody></table></div>';
+    }
+    h+='<div style="margin-top:14px;padding-top:14px;border-top:1px solid #1a2236">';
+    h+='<button class="b bo" style="font-size:11px" onclick="reapplyRules()">Re-apply All Rules</button>';
+    h+='</div></div>';
+
+    // ─── Category Manager ───
+    h+='<div class="c" style="margin-top:14px"><div class="ct">Manage Categories <span style="font-size:11px;color:#4a5568;font-weight:400">('+ALLC.length+')</span></div>';
+    h+='<p style="font-size:11px;color:#8896ab;margin-bottom:14px">Add new categories or delete unused ones. Deleting a category with transactions moves them to Uncategorized.</p>';
+    h+='<div style="margin-bottom:14px"><button class="b bp" style="font-size:12px" onclick="addCatUI()">+ New Category</button></div>';
+
+    // Count txns per category
+    var catCounts={};T.forEach(function(t){catCounts[t.category]=(catCounts[t.category]||0)+1});
+
+    h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    ALLC.slice().sort().forEach(function(c){
+      var col=CC[c]||"#7f8c8d";
+      var n=catCounts[c]||0;
+      var isBuiltin=["Groceries","Dining & Entertainment","Rideshare","Transit","Health & Pharmacy","Gas & Fuel","Auto & Tolls","Shopping","Telecom","Subscriptions","Fitness","Wellness & Spa","Coffee & Cafes","Alcohol & Liquor","Travel","Grooming","Pets","Employment Income","Transfers Received","Rent / Housing","E-Transfers Sent","Investments","Uncategorized","Food Delivery","Entertainment","Government / Tax","ATM & Fees","Amazon","Internet","Car Insurance","Home Insurance","Utilities","Professional Fees"].indexOf(c)>-1;
+      h+='<div style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;background:'+col+'15;border:1px solid '+col+'33">';
+      h+='<span style="font-size:11px;color:'+col+';font-weight:500">'+c+'</span>';
+      h+='<span style="font-size:9px;color:#4a5568;margin-left:2px">('+n+')</span>';
+      if(!isBuiltin||n===0){h+='<span style="cursor:pointer;color:#4a5568;font-size:13px;margin-left:4px;line-height:1" onclick="delCat(\''+c.replace(/'/g,"\\\'")+'\')" title="Delete category">&times;</span>'}
+      h+='</div>';
+    });
+    h+='</div></div>';
+  }
+
+  // ═══════════════════ INSIGHTS ═══════════════════
+  if(view==="insights"){
+    var allExp=T.filter(function(t){return t.type==="Expense"});
+    var numMoI=([...new Set(T.map(function(t){return mk(t.date)}))]).length||1;
+
+    // Subscription Audit
+    h+='<div class="c" style="margin-bottom:14px"><div class="ct">\ud83d\udd0d Subscription & Recurring Audit</div>';
+    var merchMo={};
+    allExp.forEach(function(t){
+      var key=t.description.replace(/\s{2,}.*$/,"").replace(/\s+\d{3,}.*$/,"").replace(/\s+#\d+.*$/,"").trim().slice(0,35);
+      var m=mk(t.date);
+      if(!merchMo[key])merchMo[key]={months:new Set(),total:0,cat:t.category};
+      merchMo[key].months.add(m);merchMo[key].total+=t.amount;
+    });
+    var recur=Object.entries(merchMo).filter(function(e){return e[1].months.size>=2}).map(function(e){var avg=e[1].total/e[1].months.size;return{name:e[0],months:e[1].months.size,total:e[1].total,avg:avg,ann:avg*12,cat:e[1].category}}).sort(function(a,b){return b.ann-a.ann});
+    var totalRec=recur.reduce(function(s,r){return s+r.avg},0);
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">';
+    h+=kpi("Monthly Recurring",fm(totalRec),"#f87171",recur.length+" items");
+    h+=kpi("Annualized",fm(totalRec*12),"#fb923c","projected yearly");
+    var subOnly=recur.filter(function(r){return r.cat==="Subscriptions"||r.avg<50});
+    h+=kpi("Subscriptions",fm(subOnly.reduce(function(s,r){return s+r.avg},0))+"/mo","#a78bfa",subOnly.length+" active");
+    h+='</div>';
+    if(recur.length>0){
+      h+='<div class="tw"><table><thead><tr><th>Merchant</th><th>Category</th><th class="r">Months</th><th class="r">Avg/Mo</th><th class="r">Annual</th></tr></thead><tbody>';
+      recur.forEach(function(r){var col=CC[r.cat]||"#7f8c8d";h+='<tr><td style="color:#eef1f6">'+r.name+(r.ann>500?' \u26a0\ufe0f':'')+'</td><td><span class="tg" style="background:'+col+'22;color:'+col+'">'+r.cat+'</span></td><td class="r" style="color:#8896ab">'+r.months+'/'+numMoI+'</td><td class="r m" style="color:#eef1f6">'+fm(r.avg)+'</td><td class="r m" style="color:#fb923c">'+fm(r.ann)+'</td></tr>'});
+      h+='</tbody></table></div>';
+    }
+    h+='</div>';
+
+    // Savings Tips
+    h+='<div class="c" style="margin-bottom:14px"><div class="ct">\ud83d\udca1 Savings Opportunities</div>';
+    var tips=[];
+
+    var cofTxns=allExp.filter(function(t){return t.category==="Coffee & Cafes"});
+    if(cofTxns.length>0){var cofMo=cofTxns.reduce(function(s,t){return s+t.amount},0)/numMoI;if(cofMo>40)tips.push({icon:"\u2615",title:"Coffee: "+fm(cofMo)+"/mo",desc:cofTxns.length+" purchases. Cutting 50% saves "+fm(cofMo*6)+"/yr.",sav:cofMo*.5})}
+
+    var dinTxns=allExp.filter(function(t){return t.category==="Dining & Entertainment"});
+    if(dinTxns.length>0){var dinMo=dinTxns.reduce(function(s,t){return s+t.amount},0)/numMoI;if(dinMo>300){var big=dinTxns.filter(function(t){return t.amount>75}).sort(function(a,b){return b.amount-a.amount});tips.push({icon:"\ud83c\udf7d\ufe0f",title:"Dining: "+fm(dinMo)+"/mo",desc:dinTxns.length+" txns, "+big.length+" over $75."+(big[0]?" Biggest: "+big[0].description.slice(0,25)+" ("+fm(big[0].amount)+")":""),sav:dinMo*.2})}}
+
+    var delTxns=allExp.filter(function(t){return t.category==="Food Delivery"});
+    if(delTxns.length>0){var delMo=delTxns.reduce(function(s,t){return s+t.amount},0)/numMoI;if(delMo>30)tips.push({icon:"\ud83d\udeb4",title:"Delivery: "+fm(delMo)+"/mo",desc:"Pickup or cooking saves 30-40%.",sav:delMo*.35})}
+
+    var aiSubs=recur.filter(function(r){return/ANTHROPIC|OPENAI|CHATGPT/i.test(r.name)});
+    if(aiSubs.length>=2){var aiT=aiSubs.reduce(function(s,r){return s+r.avg},0);tips.push({icon:"\ud83e\udd16",title:"Multiple AI Subs: "+fm(aiT)+"/mo",desc:aiSubs.map(function(r){return r.name}).join(" + ")+". Need both?",sav:aiT*.5})}
+
+    var totalSav=tips.reduce(function(s,t){return s+(t.sav||0)},0);
+    if(totalSav>0){h+='<div style="background:#0c1f16;border:1px solid #22c55e33;border-radius:8px;padding:12px;margin-bottom:14px"><span style="font-size:13px;color:#4ade80;font-weight:600">Potential: up to '+fm(totalSav)+'/mo ('+fm(totalSav*12)+'/yr)</span></div>'}
+    if(tips.length===0){h+='<div style="color:#4ade80;font-size:13px">Spending looks well-optimized.</div>'}
+    else{tips.forEach(function(tip){h+='<div style="border:1px solid #1a2236;border-radius:8px;padding:12px;margin-bottom:8px;background:#0a1020"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:16px">'+tip.icon+'</span><span style="font-size:13px;font-weight:600;color:#eef1f6">'+tip.title+'</span>'+(tip.sav>0?'<span class="m" style="font-size:11px;color:#4ade80;margin-left:auto">~'+fm(tip.sav)+'/mo</span>':'')+'</div><div style="font-size:12px;color:#8896ab;line-height:1.5">'+tip.desc+'</div></div>'})}
+    h+='</div>';
+
+    // Monthly Averages
+    h+='<div class="c"><div class="ct">\ud83c\udfaf Monthly Averages</div>';
+    var catAvg={};
+    allExp.forEach(function(t){catAvg[t.category]=(catAvg[t.category]||0)+t.amount});
+    var caList=Object.entries(catAvg).map(function(e){return{cat:e[0],avg:e[1]/numMoI}}).sort(function(a,b){return b.avg-a.avg});
+    var caMax=caList[0]?caList[0].avg:1;
+    caList.forEach(function(c2){var col=CC[c2.cat]||"#7f8c8d";h+='<div class="br"><div class="bl">'+c2.cat+'</div><div class="bt"><div class="bf" style="width:'+(c2.avg/caMax*100).toFixed(1)+'%;background:'+col+'"></div></div><div class="ba">'+fm(c2.avg)+'</div><div class="bp2">/mo</div></div>'});
+    h+='</div>';
+  }
+
+  app.innerHTML=h;
+}
+
+// ─── RULE FUNCTIONS ───
+function addManualRule(){
+  var p=document.getElementById("rp").value.trim();
+  var c=document.getElementById("rc").value.trim();
+  if(!p){alert("Enter a merchant keyword");return}
+  if(!c){alert("Enter or select a category");return}
+  if(ALLC.indexOf(c)===-1){ALLC.push(c);var hues=["#e74c3c","#3498db","#2ecc71","#f39c12","#9b59b6","#1abc9c","#e67e22","#00bcd4","#ff5722","#607d8b"];CC[c]=hues[ALLC.length%hues.length];saveCustomCats()}
+  addRule(p.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),c);render();
+}
+function delRule(i){removeRule(i);render()}
+function reapplyRules(){
+  var count=0;
+  for(var i=0;i<T.length;i++){var nc=cat(T[i].description);if(nc!==T[i].category){T[i].category=nc;count++}}
+  save();render();
+  document.getElementById("toast").innerHTML='<div class="toast" style="background:#0c152e;border-color:#38bdf844"><div class="toastt" style="color:#38bdf8">Rules Applied</div><div style="font-size:12px;color:#8896ab">Updated '+count+' transactions.</div><button class="b bo" style="margin-top:8px;font-size:11px" onclick="document.getElementById(\'toast\').innerHTML=\'\'">Dismiss</button></div>';
+}
+
+// ─── INVESTMENT UPDATE FUNCTIONS ───
+function updateFX(){
+  var H=loadHoldings();
+  var val=parseFloat(document.getElementById("hfx").value);
+  if(isNaN(val)||val<1)return;
+  H.fx_rate=val;H.as_of=new Date().toISOString().slice(0,10);
+  saveHoldings(H);render();
+}
+function updateHoldings(){
+  var H=loadHoldings();
+  var active=H.accounts.filter(function(a){return a.total_market>0});
+  for(var i=0;i<active.length;i++){
+    var el=document.getElementById("hmv"+i);
+    if(el){var v=parseFloat(el.value);if(!isNaN(v))active[i].total_market=v}
+  }
+  var fxEl=document.getElementById("hfx");
+  if(fxEl){var fv=parseFloat(fxEl.value);if(!isNaN(fv)&&fv>=1)H.fx_rate=fv}
+  H.as_of=new Date().toISOString().slice(0,10);
+  saveHoldings(H);render();
+  document.getElementById("toast").innerHTML='<div class="toast"><div class="toastt">Holdings Updated</div><div style="font-size:12px;color:#86efac">Portfolio values saved.</div><button class="b bo" style="margin-top:8px;font-size:11px" onclick="document.getElementById(\'toast\').innerHTML=\'\'">OK</button></div>';
+}
+
+// ─── INIT ───
+loadCustomCats();
+loadBudgets();
+loadFcst();
+loadMbud();
+load();
+// Seed snapshot if fewer than 2 exist
+var _initSnaps=loadSnapshots();
+if(_initSnaps.length<2){
+  var _H=loadHoldings();var _fxr=_H.fx_rate||1.3822;var _tot=0;
+  _H.accounts.forEach(function(a){_tot+=a.total_market*(a.currency==="USD"?_fxr:1)});
+  saveSnapshot(_tot,_fxr);
+  console.log("Seeded snapshot #"+(_initSnaps.length+1)+": $"+_tot.toFixed(2));
+}
+render();
+// Start auto-refresh if API key exists
+if(getFinnhubKey()){
+  startAutoRefresh();
+  // Immediate refresh on page load
+  setTimeout(function(){fetchLivePrices()},1000);
+}
+document.getElementById("fi").addEventListener("change",function(e){handleFiles(e.target.files)});
+</script>
+</body>
+</html>
